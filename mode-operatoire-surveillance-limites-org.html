@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mode opératoire — Surveillance des Limites Org</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141b26;
+    --ink-soft:#41505f;
+    --paper:#f6f7f4;
+    --card:#ffffff;
+    --line:#e2e6df;
+    --accent:#0b6b6b;      /* teal monitoring */
+    --accent-2:#2477d6;    /* bleu courbe conso */
+    --curve-red:#c23934;   /* rouge limite */
+    --ok:#2e844a;
+    --warn:#c47a15;
+    --crit:#c23934;
+    --shadow:0 1px 2px rgba(20,27,38,.06), 0 8px 24px rgba(20,27,38,.06);
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--body);line-height:1.65;font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding:0 24px}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    background:
+      radial-gradient(1200px 400px at 85% -10%, rgba(36,119,214,.10), transparent 60%),
+      linear-gradient(180deg,#0e2431 0%, #12313f 100%);
+    color:#eaf1f0;padding:64px 0 52px;position:relative;overflow:hidden;
+    border-bottom:1px solid #0a1a23;
+  }
+  header.hero::after{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+    background-size:34px 34px;mask-image:linear-gradient(180deg,#000 0%,transparent 85%);
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:#7fd6cf;margin:0 0 14px;position:relative;z-index:1;
+  }
+  .hero h1{
+    font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,50px);
+    line-height:1.05;margin:0 0 16px;letter-spacing:-.02em;position:relative;z-index:1;
+  }
+  .hero p{max-width:60ch;color:#c4d3d1;font-size:17px;margin:0;position:relative;z-index:1}
+  .hero .meta{
+    margin-top:26px;display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1;
+  }
+  .chip{
+    font-family:var(--mono);font-size:12px;padding:5px 11px;border-radius:999px;
+    background:rgba(127,214,207,.10);border:1px solid rgba(127,214,207,.28);color:#a7ede6;
+  }
+
+  /* ---------- TOC ---------- */
+  nav.toc{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:22px 26px;margin:-34px auto 0;position:relative;z-index:5;
+  }
+  nav.toc h2{font-family:var(--display);font-size:13px;text-transform:uppercase;letter-spacing:.14em;
+    color:var(--ink-soft);margin:0 0 14px}
+  nav.toc ol{margin:0;padding:0;list-style:none;counter-reset:toc;
+    display:grid;grid-template-columns:1fr 1fr;gap:8px 28px}
+  nav.toc li{counter-increment:toc;display:flex;gap:12px;align-items:baseline}
+  nav.toc li::before{
+    content:counter(toc,decimal-leading-zero);font-family:var(--mono);font-size:12px;
+    color:var(--accent);font-weight:500;min-width:22px;
+  }
+  nav.toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent;padding:2px 0}
+  nav.toc a:hover{border-bottom-color:var(--accent)}
+
+  main{padding:56px 0 40px}
+  section{margin-bottom:56px;scroll-margin-top:20px}
+
+  .kicker{
+    font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent);display:flex;align-items:center;gap:12px;margin:0 0 8px;
+  }
+  .kicker::before{content:"";width:26px;height:2px;background:var(--accent);display:inline-block}
+  h2.sec{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.4vw,32px);
+    letter-spacing:-.015em;margin:0 0 6px;line-height:1.15}
+  h3{font-family:var(--display);font-weight:600;font-size:19px;margin:34px 0 10px;letter-spacing:-.01em}
+  p{margin:0 0 14px;color:var(--ink-soft)}
+  p strong,li strong{color:var(--ink);font-weight:600}
+  code{font-family:var(--mono);font-size:.86em;background:#eef1ec;padding:1.5px 6px;border-radius:5px;
+    color:#0e3a3a;border:1px solid #e0e6dd}
+
+  /* ---------- STEPS ---------- */
+  ol.steps{list-style:none;counter-reset:step;margin:18px 0;padding:0}
+  ol.steps>li{
+    counter-increment:step;position:relative;padding:0 0 22px 56px;
+  }
+  ol.steps>li::before{
+    content:counter(step);position:absolute;left:0;top:-2px;
+    width:36px;height:36px;border-radius:10px;background:var(--ink);color:#fff;
+    font-family:var(--display);font-weight:600;font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  ol.steps>li::after{
+    content:"";position:absolute;left:17.5px;top:38px;bottom:2px;width:1.5px;
+    background:linear-gradient(var(--line),transparent);
+  }
+  ol.steps>li:last-child::after{display:none}
+  ol.steps>li h4{font-family:var(--display);font-weight:600;font-size:16.5px;margin:6px 0 6px;color:var(--ink)}
+  ol.steps>li p{margin:0 0 6px}
+
+  ul.plain{margin:6px 0 14px;padding-left:20px}
+  ul.plain li{margin:5px 0;color:var(--ink-soft)}
+
+  /* ---------- FIGURE ---------- */
+  figure{margin:22px 0 28px}
+  .shot{
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);
+    box-shadow:var(--shadow);
+  }
+  .shot .bar{
+    display:flex;align-items:center;gap:7px;padding:11px 15px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#fbfcfa,#f4f6f2);
+  }
+  .shot .bar i{width:11px;height:11px;border-radius:50%;background:#dfe3dc;display:inline-block}
+  .shot .bar i:nth-child(1){background:#e06b5f}
+  .shot .bar i:nth-child(2){background:#e6b34d}
+  .shot .bar i:nth-child(3){background:#6fb98a}
+  .shot .bar span{margin-left:8px;font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+  .shot img{display:block;width:100%;height:auto}
+  .shot .ph{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:230px;padding:40px;text-align:center;gap:10px;
+    background:repeating-linear-gradient(45deg,#fafbf9,#fafbf9 12px,#f2f4f0 12px,#f2f4f0 24px);
+    color:var(--ink-soft);
+  }
+  .shot .ph .ic{font-size:30px;opacity:.7}
+  .shot .ph .fn{font-family:var(--mono);font-size:13px;color:var(--accent);
+    background:#fff;border:1px solid var(--line);padding:4px 10px;border-radius:6px}
+  .shot .ph small{font-size:12.5px;max-width:42ch}
+  figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px;padding-left:2px}
+  figcaption b{font-family:var(--mono);font-weight:500;color:var(--ink);font-size:12px}
+
+  /* ---------- CALLOUTS ---------- */
+  .note{
+    border-radius:12px;padding:15px 18px 15px 16px;margin:18px 0;font-size:14.5px;
+    display:flex;gap:13px;align-items:flex-start;border:1px solid;
+  }
+  .note .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    font-weight:500;padding-top:2px;white-space:nowrap}
+  .note.info{background:#eef5fb;border-color:#cfe1f2;color:#274b66}
+  .note.info .tag{color:#2477d6}
+  .note.warn{background:#fdf6e8;border-color:#f0e0bd;color:#6b5410}
+  .note.warn .tag{color:#c47a15}
+  .note p{margin:0;color:inherit}
+  .note p+p{margin-top:6px}
+
+  /* ---------- STATUS LEGEND ---------- */
+  .legend{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 6px}
+  .legend .lv{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card)}
+  .legend .pill{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:600;
+    color:#fff;padding:3px 9px;border-radius:6px;margin-bottom:9px}
+  .legend .ok{background:var(--ok)} .legend .wa{background:var(--warn)} .legend .cr{background:var(--crit)}
+  .legend .lv b{display:block;font-family:var(--display);font-size:14px;color:var(--ink)}
+  .legend .lv span{font-size:13px;color:var(--ink-soft)}
+
+  /* ---------- TABLE ---------- */
+  .tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .tbl th{background:#f1f4ef;text-align:left;font-family:var(--display);font-weight:600;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);padding:11px 14px}
+  .tbl td{padding:11px 14px;border-top:1px solid var(--line);color:var(--ink-soft);vertical-align:top}
+  .tbl td code{font-size:12.5px}
+
+  /* ---------- FAQ ---------- */
+  details{border:1px solid var(--line);border-radius:12px;background:var(--card);margin:10px 0;overflow:hidden}
+  details summary{cursor:pointer;padding:15px 18px;font-family:var(--display);font-weight:600;font-size:15.5px;
+    color:var(--ink);list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";font-family:var(--mono);color:var(--accent);font-size:20px;transition:transform .2s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details .body{padding:0 18px 16px;font-size:14.5px;color:var(--ink-soft)}
+  details .body p{margin:0 0 8px}
+
+  footer{border-top:1px solid var(--line);padding:30px 0 46px;margin-top:24px}
+  footer p{font-size:13px;color:var(--ink-soft);font-family:var(--mono);margin:0}
+
+  @media (max-width:640px){
+    nav.toc ol{grid-template-columns:1fr}
+    .legend{grid-template-columns:1fr}
+    ol.steps>li{padding-left:48px}
+  }
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Mode opératoire · Composant Lightning</p>
+    <h1>Surveillance des Limites Org</h1>
+    <p>Guide d'utilisation du tableau de bord de suivi des limites de l'organisation Salesforce&nbsp;: visualiser la consommation, inspecter un instantané, et planifier les exports automatiques.</p>
+    <div class="meta">
+      <span class="chip">3 onglets</span>
+      <span class="chip">Monitoring · Planification · Alertes</span>
+      <span class="chip">Données : bibliothèque « Reporting Limites »</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc">
+    <h2>Sommaire</h2>
+    <ol>
+      <li><a href="#apercu">Aperçu de l'application</a></li>
+      <li><a href="#prerequis">Prérequis & accès</a></li>
+      <li><a href="#monitoring">Onglet Monitoring</a></li>
+      <li><a href="#snapshot">Consulter un instantané</a></li>
+      <li><a href="#settings">Personnaliser les métriques</a></li>
+      <li><a href="#planification">Onglet Planification</a></li>
+      <li><a href="#alertes">Onglet Alertes</a></li>
+      <li><a href="#faq">Dépannage & FAQ</a></li>
+    </ol>
+  </nav>
+</div>
+
+<main class="wrap">
+
+  <!-- 1. APERCU -->
+  <section id="apercu">
+    <p class="kicker">Aperçu</p>
+    <h2 class="sec">À quoi sert l'application</h2>
+    <p>Le composant <strong>Surveillance des Limites Org</strong> centralise le suivi des limites de la plateforme Salesforce (stockage, appels API, emails, événements, etc.). Il permet de suivre l'évolution de la consommation dans le temps, de comparer chaque valeur à son plafond théorique, et de mettre en place des exports planifiés pour alimenter l'historique.</p>
+    <p>L'interface est organisée en trois onglets&nbsp;:</p>
+    <ul class="plain">
+      <li><strong>Monitoring</strong> — le graphique d'évolution et le détail d'un instantané.</li>
+      <li><strong>Planification</strong> — la gestion des exports automatiques qui construisent l'historique.</li>
+      <li><strong>Alertes</strong> — fonctionnalité à venir.</li>
+    </ul>
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Surveillance des Limites Org — vue d'ensemble</span></div>
+        <img src="img/capture-monitoring.png" alt="Vue d'ensemble de l'onglet Monitoring"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">🖼️</div>
+          <div class="fn">img/capture-monitoring.png</div>
+          <small>Capture d'écran de l'onglet Monitoring (vue complète avec le graphique).</small>
+        </div>
+      </div>
+      <figcaption>Fig. 1 — Écran d'accueil, onglet <b>Monitoring</b> actif.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2. PREREQUIS -->
+  <section id="prerequis">
+    <p class="kicker">Avant de commencer</p>
+    <h2 class="sec">Prérequis & accès</h2>
+    <ul class="plain">
+      <li>Le composant doit être <strong>ajouté à une page Lightning</strong> (page d'accueil, page d'application ou onglet dédié).</li>
+      <li>L'historique affiché provient des <strong>fichiers CSV d'export</strong> stockés dans la bibliothèque de documents nommée <code>Reporting Limites</code>. Sans export disponible, le graphique reste vide et un message vous invite à vérifier cette bibliothèque.</li>
+      <li>Les préférences d'affichage (métriques masquées) sont <strong>propres à chaque utilisateur</strong> et conservées d'une session à l'autre.</li>
+    </ul>
+    <div class="note info">
+      <span class="tag">Astuce</span>
+      <p>Si l'écran est vide au premier lancement, commencez par l'onglet <strong>Planification</strong> pour créer un premier export&nbsp;: c'est lui qui alimente les données du graphique.</p>
+    </div>
+  </section>
+
+  <!-- 3. MONITORING -->
+  <section id="monitoring">
+    <p class="kicker">Onglet 1</p>
+    <h2 class="sec">Monitoring — lire la consommation</h2>
+    <p>Cet onglet affiche l'évolution d'une métrique sur la durée. Deux courbes sont superposées&nbsp;:</p>
+    <ul class="plain">
+      <li><strong>Consommation réelle</strong> — courbe <span style="color:var(--accent-2);font-weight:600">bleue</span>, avec aire remplie&nbsp;: la valeur effectivement consommée à chaque relevé.</li>
+      <li><strong>Limite théorique</strong> — courbe <span style="color:var(--curve-red);font-weight:600">rouge en pointillés</span>&nbsp;: le plafond autorisé par l'organisation.</li>
+    </ul>
+
+    <ol class="steps">
+      <li>
+        <h4>Choisir la métrique à afficher</h4>
+        <p>Utilisez la liste déroulante <strong>« Sélectionnez une métrique »</strong> en haut du graphique. Les métriques sont triées par nom et n'affichent que celles que vous n'avez pas masquées (voir la personnalisation plus bas).</p>
+      </li>
+      <li>
+        <h4>Lire le graphique</h4>
+        <p>L'axe horizontal correspond à l'horodatage de chaque relevé (date + heure). Comparez visuellement la courbe bleue à la courbe rouge&nbsp;: plus l'écart se réduit, plus vous approchez du plafond.</p>
+      </li>
+      <li>
+        <h4>Inspecter un point précis</h4>
+        <p>Cliquez sur n'importe quel point de la courbe pour ouvrir le détail complet du relevé (voir la section suivante). Le point sélectionné est mis en surbrillance (contour orange, centre doré).</p>
+      </li>
+    </ol>
+
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Monitoring — sélecteur + graphique</span></div>
+        <img src="img/capture-monitoring-graphique.png" alt="Sélecteur de métrique et graphique"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">📈</div>
+          <div class="fn">img/capture-monitoring-graphique.png</div>
+          <small>Gros plan sur la liste déroulante et les deux courbes (conso réelle en bleu, limite en rouge).</small>
+        </div>
+      </div>
+      <figcaption>Fig. 2 — Sélection d'une métrique et lecture des deux courbes.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 4. SNAPSHOT -->
+  <section id="snapshot">
+    <p class="kicker">Onglet 1 · Détail</p>
+    <h2 class="sec">Consulter un instantané (snapshot)</h2>
+    <p>Au clic sur un point du graphique, un panneau s'ouvre à droite&nbsp;: le <strong>Snapshot des Limites</strong>. Il liste <strong>toutes vos métriques visibles</strong> telles qu'elles étaient à l'instant sélectionné, avec la date exacte du relevé en en-tête.</p>
+    <p>Pour chaque métrique&nbsp;: son nom lisible, une infobulle <code>(i)</code> décrivant la métrique, le pourcentage d'utilisation, une barre de progression, et les valeurs <strong>actuelle / maximum</strong>.</p>
+
+    <h3>Code couleur des statuts</h3>
+    <p>Le pourcentage et la barre changent de couleur selon le niveau de consommation&nbsp;:</p>
+    <div class="legend">
+      <div class="lv"><span class="pill ok">OK</span><b>Moins de 75 %</b><span>Consommation confortable.</span></div>
+      <div class="lv"><span class="pill wa">Attention</span><b>75 % à 89 %</b><span>À surveiller de près.</span></div>
+      <div class="lv"><span class="pill cr">Critique</span><b>90 % et plus</b><span>Risque d'atteindre le plafond.</span></div>
+    </div>
+
+    <div class="note info">
+      <span class="tag">Bon à savoir</span>
+      <p>Fermez le panneau avec la croix en haut à droite&nbsp;; le point du graphique reprend alors son apparence normale. Le contenu du snapshot se met automatiquement à jour si vous modifiez la sélection des métriques.</p>
+    </div>
+
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Monitoring — panneau Snapshot</span></div>
+        <img src="img/capture-snapshot.png" alt="Panneau de détail d'un instantané"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">🔍</div>
+          <div class="fn">img/capture-snapshot.png</div>
+          <small>Panneau « Snapshot des Limites » ouvert à droite, avec les barres de progression colorées.</small>
+        </div>
+      </div>
+      <figcaption>Fig. 3 — Détail d'un relevé après clic sur un point de la courbe.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5. SETTINGS -->
+  <section id="settings">
+    <p class="kicker">Onglet 1 · Réglages</p>
+    <h2 class="sec">Personnaliser les métriques affichées</h2>
+    <p>La <strong>roue crantée</strong> ⚙, en haut à droite de la carte, ouvre la fenêtre de sélection des métriques. Vous y choisissez celles à afficher dans le sélecteur et dans les snapshots.</p>
+
+    <ol class="steps">
+      <li>
+        <h4>Ouvrir les paramètres</h4>
+        <p>Cliquez sur l'icône ⚙ (« Paramètres ») à côté du titre de la carte.</p>
+      </li>
+      <li>
+        <h4>Cocher / décocher les métriques</h4>
+        <p>Les métriques sont regroupées par <strong>catégorie</strong> (Stockage, Communication, API &amp; Intégrations, Automatisation, Événements, Sécurité, Rapports, Analytics, Développement…). Cochez celles à afficher, décochez celles à masquer.</p>
+      </li>
+      <li>
+        <h4>Utiliser les raccourcis</h4>
+        <p><strong>Tout sélectionner</strong> / <strong>Tout désélectionner</strong> agissent sur l'ensemble. Les boutons <strong>Tout</strong> / <strong>Aucun</strong> de chaque en-tête de catégorie agissent uniquement sur celle-ci. Le compteur en bas indique le nombre de métriques sélectionnées.</p>
+      </li>
+      <li>
+        <h4>Appliquer</h4>
+        <p>Le bouton <strong>Appliquer</strong> ferme la fenêtre et <strong>enregistre vos préférences</strong> (un message de confirmation s'affiche). Si la métrique actuellement affichée dans le graphique vient d'être masquée, l'affichage bascule automatiquement sur la première métrique disponible.</p>
+      </li>
+    </ol>
+
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Fenêtre — Sélection des métriques</span></div>
+        <img src="img/capture-settings.png" alt="Fenêtre de sélection des métriques"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">⚙️</div>
+          <div class="fn">img/capture-settings.png</div>
+          <small>Fenêtre modale « Sélection des Métriques à Afficher », métriques groupées par catégorie.</small>
+        </div>
+      </div>
+      <figcaption>Fig. 4 — Fenêtre de personnalisation ouverte via la roue crantée.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 6. PLANIFICATION -->
+  <section id="planification">
+    <p class="kicker">Onglet 2</p>
+    <h2 class="sec">Planification — automatiser les exports</h2>
+    <p>Cet onglet gère les <strong>exports planifiés</strong> qui alimentent l'historique du Monitoring. Il se compose de deux zones&nbsp;: la liste des plannings actifs, et le formulaire de création.</p>
+
+    <h3>Exports planifiés actifs</h3>
+    <p>Le tableau récapitule les jobs en place&nbsp;: <strong>Nom du Job</strong>, <strong>Fréquence</strong>, <strong>Prochaine Exécution</strong>, <strong>Statut</strong> et <strong>Actions</strong>. Le bouton <strong>Rafraîchir</strong> recharge la liste à tout moment. Les statuts sont signalés par une pastille de couleur&nbsp;:</p>
+    <table class="tbl">
+      <thead><tr><th>Statut du job</th><th>Signification</th></tr></thead>
+      <tbody>
+        <tr><td><code>WAITING</code> / <code>ACQUIRED</code></td><td>Planifié, en attente de sa prochaine exécution (pastille verte).</td></tr>
+        <tr><td><code>EXECUTING</code></td><td>Exécution en cours (pastille orange).</td></tr>
+        <tr><td><code>PAUSED</code></td><td>En pause (pastille claire).</td></tr>
+      </tbody>
+    </table>
+    <p>Pour retirer un planning, cliquez sur l'icône <strong>corbeille</strong> de sa ligne&nbsp;: la suppression est immédiate et la liste se rafraîchit. Si aucun planning n'existe, un encart « Aucun export planifié actif » s'affiche.</p>
+
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Planification — plannings actifs</span></div>
+        <img src="img/capture-planification.png" alt="Onglet Planification"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">🗓️</div>
+          <div class="fn">img/capture-planification.png</div>
+          <small>Onglet Planification avec le tableau des exports actifs et le bouton Rafraîchir.</small>
+        </div>
+      </div>
+      <figcaption>Fig. 5 — Liste des exports planifiés actifs.</figcaption>
+    </figure>
+
+    <h3>Configurer un nouveau planning</h3>
+    <ol class="steps">
+      <li>
+        <h4>Choisir une fréquence</h4>
+        <p>Sélectionnez l'une des options&nbsp;: <strong>Toutes les 15 minutes</strong>, <strong>Toutes les 30 minutes</strong>, <strong>Toutes les heures</strong> ou <strong>Quotidien</strong>.</p>
+      </li>
+      <li>
+        <h4>Préciser l'heure (mode quotidien)</h4>
+        <p>Si vous choisissez <strong>Quotidien</strong>, un sélecteur d'heure apparaît (par tranches de 30 minutes, de 00:00 à 23:30). Il est obligatoire pour valider.</p>
+      </li>
+      <li>
+        <h4>Vérifier le résumé</h4>
+        <p>Un encart bleu <strong>« Résumé de la Planification »</strong> décrit en clair ce qui sera exécuté (par ex. « toutes les 15 minutes… » ou « tous les jours à 08:00 »).</p>
+      </li>
+      <li>
+        <h4>Activer</h4>
+        <p>Cliquez sur <strong>Activer la Planification</strong>. Le bouton reste inactif tant qu'aucune fréquence n'est choisie (ou, en quotidien, tant qu'aucune heure n'est sélectionnée). Un message confirme la création et la liste se met à jour.</p>
+      </li>
+    </ol>
+
+    <div class="note warn">
+      <span class="tag">Attention</span>
+      <p><strong>Un seul planning actif à la fois.</strong> Si un planning existe déjà, le formulaire de création est verrouillé et un avertissement s'affiche&nbsp;: vous devez d'abord supprimer le planning existant pour en créer un nouveau. Cela évite les <strong>doublons d'exports</strong>.</p>
+    </div>
+
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Planification — nouveau planning</span></div>
+        <img src="img/capture-nouveau-planning.png" alt="Formulaire de création d'un planning"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">➕</div>
+          <div class="fn">img/capture-nouveau-planning.png</div>
+          <small>Formulaire « Configurer un Nouveau Planning » avec les fréquences et le résumé.</small>
+        </div>
+      </div>
+      <figcaption>Fig. 6 — Création d'un nouvel export planifié.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 7. ALERTES -->
+  <section id="alertes">
+    <p class="kicker">Onglet 3</p>
+    <h2 class="sec">Alertes</h2>
+    <p>Cet onglet est réservé à la <strong>configuration des alertes</strong>. La fonctionnalité n'est pas encore disponible&nbsp;: un message « Cette fonctionnalité sera bientôt disponible » s'affiche pour l'instant.</p>
+    <figure>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i><span>Alertes — à venir</span></div>
+        <img src="img/capture-alertes.png" alt="Onglet Alertes"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ph" style="display:none">
+          <div class="ic">🔔</div>
+          <div class="fn">img/capture-alertes.png</div>
+          <small>Onglet Alertes (placeholder « bientôt disponible »).</small>
+        </div>
+      </div>
+      <figcaption>Fig. 7 — Onglet Alertes, en attente de développement.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 8. FAQ -->
+  <section id="faq">
+    <p class="kicker">Support</p>
+    <h2 class="sec">Dépannage & FAQ</h2>
+
+    <details>
+      <summary>Le graphique est vide ou affiche un message d'erreur</summary>
+      <div class="body">
+        <p>Cela signifie qu'aucune donnée n'a été trouvée. Vérifiez que la bibliothèque de documents <code>Reporting Limites</code> existe et contient des fichiers CSV d'export. Créez un export depuis l'onglet <strong>Planification</strong> si nécessaire, puis attendez la première exécution.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Une métrique n'apparaît pas dans la liste déroulante</summary>
+      <div class="body">
+        <p>Elle est probablement masquée. Ouvrez la roue crantée ⚙, cochez la métrique dans sa catégorie, puis cliquez sur <strong>Appliquer</strong>.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Je ne peux pas créer de nouveau planning</summary>
+      <div class="body">
+        <p>Un planning actif existe déjà&nbsp;: le formulaire est verrouillé pour éviter les doublons. Supprimez le planning existant (icône corbeille dans le tableau), puis recréez-en un.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Le tableau des plannings ne reflète pas mon action</summary>
+      <div class="body">
+        <p>Cliquez sur <strong>Rafraîchir</strong>. La liste se recharge aussi automatiquement à l'ouverture de l'onglet et après chaque création ou suppression.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Mes préférences d'affichage sont-elles conservées&nbsp;?</summary>
+      <div class="body">
+        <p>Oui. Les métriques masquées sont enregistrées par utilisateur lorsque vous cliquez sur <strong>Appliquer</strong>, et restaurées à votre prochaine ouverture.</p>
+      </div>
+    </details>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p>Mode opératoire — Surveillance des Limites Org · à compléter avec les captures d'écran indiquées.</p>
+</footer>
+
+</body>
+</html>
