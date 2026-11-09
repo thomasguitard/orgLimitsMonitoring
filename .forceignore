@@ -1,0 +1,7 @@
+# Fichiers ignorés par sf project deploy/retrieve
+package.xml
+
+# LWC
+**/jsconfig.json
+**/.eslintrc.json
+**/__tests__/**

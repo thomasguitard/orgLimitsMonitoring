@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>OrgWatchAdminController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>OrgWatchSetupController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>OrgWatch_Admin_Access</name>
+    </customPermissions>
+    <description>Accès additionnel OrgWatch : donne l&apos;onglet Admin en plus de l&apos;accès de base. À assigner en complément du Permission Set &quot;OrgWatch - User&quot; (pas à sa place).</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>OrgWatch - Admin</label>
+</PermissionSet>

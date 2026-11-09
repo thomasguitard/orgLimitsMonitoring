@@ -1,0 +1,1411 @@
+:host {
+    --ow-radius-sm: 8px;
+    --ow-radius-md: 12px;
+    --ow-radius-lg: 18px;
+    --ow-shadow-sm: 0 1px 3px rgba(28, 20, 61, 0.06);
+    --ow-shadow-md: 0 4px 14px rgba(28, 20, 61, 0.09), 0 1px 3px rgba(28, 20, 61, 0.05);
+    --ow-shadow-lg: 0 16px 40px rgba(28, 20, 61, 0.14), 0 4px 10px rgba(28, 20, 61, 0.06);
+    --ow-border: #e7e4f2;
+    --ow-surface: #ffffff;
+    --ow-surface-alt: #f7f6fc;
+    --ow-text-primary: #1a1530;
+    --ow-text-secondary: #6d6884;
+    --ow-accent: #5b4fe0;
+    --ow-accent-strong: #4636c4;
+    --ow-accent-soft: #eeecfb;
+    --ow-teal: #0d8a8a;
+    --ow-teal-soft: #e1f5f4;
+    --ow-amber: #b3730e;
+    --ow-amber-soft: #fbeed9;
+    --ow-success: #14805a;
+    --ow-success-soft: #e2f5ec;
+    --ow-warning: #b3730e;
+    --ow-warning-soft: #fbeed9;
+    --ow-critical: #c2264a;
+    --ow-critical-soft: #fbe6ec;
+    --ow-overlay: rgba(255, 255, 255, 0.85);
+
+    /* Propriété héritée : sert de valeur de repli à tout texte du composant
+       qui ne fixe pas sa propre couleur (labels, texte de modale, cellules de
+       tableau...). Sans cette ligne, ce texte garde la couleur héritée de la
+       page (sombre) même une fois le thème sombre activé -> illisible. */
+    color: var(--ow-text-primary);
+}
+
+/* ========== THEME SOMBRE ==========
+   Classe posée sur le host (this.template.host.classList.toggle('dark-theme', ...))
+   depuis le JS. Comme toutes les règles du fichier lisent déjà les tokens --ow-*,
+   ce bloc suffit à retourner l'intégralité des zones custom-stylées du composant :
+   aucune autre règle CSS n'a besoin d'être modifiée. */
+:host(.dark-theme) {
+    --ow-surface: #1c1a29;
+    --ow-surface-alt: #242233;
+    --ow-border: #38344e;
+    --ow-text-primary: #f1f0f8;
+    --ow-text-secondary: #b7b2cf;
+    --ow-accent: #8f83f5;
+    --ow-accent-strong: #a89bff;
+    --ow-accent-soft: #322c54;
+    --ow-teal: #3fd1c9;
+    --ow-teal-soft: #163938;
+    --ow-amber: #e0a542;
+    --ow-amber-soft: #3a2f18;
+    --ow-success: #3ecf8e;
+    --ow-success-soft: #123a2b;
+    --ow-warning: #e0a542;
+    --ow-warning-soft: #3a2f18;
+    --ow-critical: #ef5876;
+    --ow-critical-soft: #3d1521;
+    --ow-overlay: rgba(28, 26, 41, 0.85);
+
+    /* Meilleur effort sur les composants de base SLDS via leurs hooks de style
+       documentés et stables (pas de vrai "dark mode" natif pour lightning-*). */
+    --slds-c-card-color-background: #1c1a29;
+    --slds-c-card-color-border: #38344e;
+    --slds-c-input-color-background: #242233;
+    --slds-c-input-text-color: #f1f0f8;
+    --slds-c-input-color-border: #38344e;
+    --slds-c-button-neutral-color-background: #242233;
+    --slds-c-button-neutral-text-color: #f1f0f8;
+    /* Le hook texte du bouton "neutral" est en réalité préfixé --sds-c-*
+       (ancien préfixe SDS, toujours celui utilisé pour lightning-button et
+       lightning-icon dans cette version de SLDS) et non --slds-c-* comme le
+       fond : sans cette ligne le texte des boutons neutres restait sombre,
+       donc illisible sur fond sombre. */
+    --sds-c-button-text-color: #f1f0f8;
+    --sds-c-button-neutral-color-background: #242233;
+
+    /* Unité de marque : en thème sombre, les boutons destructifs (rouge)
+       reprennent la couleur d'accent violette plutôt que le rouge SLDS par
+       défaut. */
+    --slds-c-button-destructive-color-background: var(--ow-accent);
+    --sds-c-button-destructive-color-background: var(--ow-accent);
+}
+
+/* Boutons "destructive-text" (rouge, texte seul) : pas de hook fiable
+   identifié pour ce sous-variant précis, reconstruits en HTML natif (même
+   logique que les autres contrôles déjà réécrits cette session) pour
+   garantir la bascule rouge (clair) -> violet (sombre). */
+.ow-danger-text-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: var(--ow-critical);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 4px;
+}
+
+.ow-danger-text-btn:hover {
+    text-decoration: underline;
+}
+
+.ow-danger-text-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.ow-danger-text-icon {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    fill: none;
+}
+
+:host(.dark-theme) .ow-danger-text-btn {
+    color: var(--ow-accent);
+}
+
+:host(.dark-theme) .progress-bar-compact {
+    background-color: #35324a;
+}
+
+:host(.dark-theme) .purge-bar {
+    background: #35324a;
+}
+
+:host(.dark-theme) .metric-row {
+    border-left-color: #46415f;
+}
+
+:host(.dark-theme) .settings-categories-container::-webkit-scrollbar-thumb {
+    background: #46415f;
+}
+
+:host(.dark-theme) .settings-categories-container::-webkit-scrollbar-thumb:hover {
+    background: #5a5476;
+}
+
+/* ========== CLASSES SLDS GÉNÉRIQUES ==========
+   Ces classes standard (pas des lightning-* en shadow DOM) sont écrites
+   directement dans notre propre template : le style SLDS global leur donne un
+   fond blanc / texte sombre fixes. On les recouvre ici avec nos tokens
+   --ow-* pour qu'elles suivent le thème comme le reste du composant. */
+
+.slds-box {
+    background: var(--ow-surface);
+    border-color: var(--ow-border);
+}
+
+.slds-theme_shade {
+    background: var(--ow-surface-alt);
+}
+
+.slds-modal__content,
+.slds-modal__header,
+.slds-modal__footer {
+    background-color: var(--ow-surface);
+    color: var(--ow-text-primary);
+}
+
+/* SLDS déclare cette classe utilitaire avec !important : notre override doit
+   faire de même pour gagner, sinon il est silencieusement ignoré. */
+.slds-text-color_weak {
+    color: var(--ow-text-secondary) !important;
+}
+
+/* Libellés des composants de formulaire (lightning-input, -combobox, -slider,
+   -radio-group) : leur couleur par défaut est fixée dans le shadow DOM du
+   composant, donc invisible à un sélecteur de classe classique. ::part(label)
+   est la technique déjà utilisée et fonctionnelle dans ce fichier (voir
+   .metric-item lightning-input::part(label) plus bas) ; on l'applique ici à
+   l'ensemble des composants de formulaire pour que leurs libellés suivent le
+   thème sombre au lieu de rester illisibles sur fond sombre. */
+lightning-input::part(label),
+lightning-combobox::part(label),
+lightning-slider::part(label),
+lightning-radio-group::part(label) {
+    color: var(--ow-text-secondary);
+}
+
+.slds-table td,
+.slds-table th {
+    border-color: var(--ow-border);
+}
+
+.slds-table tbody tr {
+    background: var(--ow-surface);
+}
+
+/* SLDS peint son fond de survol directement sur les <td>/<th> de la ligne
+   survolée, pas sur le <tr> lui-même : une règle ciblant seulement le <tr>
+   (comme la tentative précédente) n'a donc aucun effet visible, la couleur
+   posée sur chaque cellule reste au-dessus. On neutralise ici au niveau des
+   cellules, là où SLDS applique réellement son fond clair fixe (texte clair
+   sur fond de survol clair = illisible en thème sombre). */
+.slds-table tbody tr:hover td,
+.slds-table tbody tr:hover th,
+.slds-hint-parent:hover td,
+.slds-hint-parent:hover th {
+    background-color: var(--ow-surface) !important;
+}
+
+/* ========== LAYOUT ========== */
+
+.app-shell {
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+/* ========== NAVBAR (logo + onglets + contrôles, une seule ligne) ========== */
+
+.app-navbar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    row-gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px 14px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--ow-border);
+}
+
+.tab-panel-hidden {
+    display: none;
+}
+
+.brand-logo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.brand-logo {
+    display: block;
+    height: 104px;
+    width: auto;
+}
+
+.brand-logo-text {
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ow-accent);
+    white-space: nowrap;
+}
+
+.tab-nav {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    gap: 4px;
+    overflow-x: auto;
+}
+
+.tab-nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: var(--ow-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 8px 12px;
+    border-radius: var(--ow-radius-sm);
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tab-nav-item:hover {
+    background: var(--ow-accent-soft);
+    color: var(--ow-accent);
+}
+
+.tab-nav-item.active {
+    color: var(--ow-accent);
+    border-bottom-color: var(--ow-accent);
+}
+
+.tab-nav-icon {
+    --sds-c-icon-color-foreground-default: var(--ow-text-secondary);
+}
+
+.tab-nav-item:hover .tab-nav-icon,
+.tab-nav-item.active .tab-nav-icon {
+    --sds-c-icon-color-foreground-default: var(--ow-accent);
+}
+
+/* ========== HEADER CONTROLS (thème / langue) ========== */
+
+.icon-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--ow-border);
+    background: var(--ow-surface);
+    color: var(--ow-text-secondary);
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.icon-toggle-btn:hover {
+    background: var(--ow-accent-soft);
+    color: var(--ow-accent);
+}
+
+.theme-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+.theme-icon circle,
+.theme-icon path {
+    stroke: none;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 4px;
+    margin-left: 16px;
+}
+
+.lang-switch {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--ow-border);
+    border-radius: 999px;
+    overflow: hidden;
+    height: 1.875rem;
+}
+
+.lang-switch button {
+    border: none;
+    background: transparent;
+    color: var(--ow-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 10px;
+    height: 100%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lang-switch button.active {
+    background: var(--ow-accent);
+    color: #ffffff;
+}
+
+.lang-switch button:not(.active):hover {
+    background: var(--ow-accent-soft);
+    color: var(--ow-accent);
+}
+
+/* ========== SHARED ========== */
+
+.main-container {
+    overflow: hidden;
+}
+
+.loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 320px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ow-overlay);
+    backdrop-filter: blur(1px);
+    border-radius: var(--ow-radius-lg);
+}
+
+/* ========== MONITORING TAB ========== */
+
+.chart-container {
+    height: 400px;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--ow-radius-md) !important;
+    border-color: var(--ow-border) !important;
+    box-shadow: var(--ow-shadow-sm);
+    background: var(--ow-surface);
+}
+
+.snapshot-panel {
+    border-left: 1px solid var(--ow-border);
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--ow-surface-alt);
+    border-radius: 0 var(--ow-radius-lg) var(--ow-radius-lg) 0;
+}
+
+.snapshot-content {
+    max-height: 520px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.metric-row {
+    background: var(--ow-surface);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: var(--ow-radius-md);
+    border: 1px solid var(--ow-border);
+    border-left: 3px solid #d8dde3;
+    box-shadow: var(--ow-shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    /* Cliquable : sélectionne la métrique et la trace sur le graphique. */
+    cursor: pointer;
+}
+
+/* Anneau de focus volontairement dans l'accent (violet) et non en or :
+   il indique "où est le curseur clavier", pas "quelle métrique est tracée",
+   les deux devant rester distinguables quand ils tombent sur la même ligne. */
+.metric-row:focus-visible {
+    outline: 2px solid var(--ow-accent);
+    outline-offset: 2px;
+}
+
+.metric-row:hover {
+    box-shadow: var(--ow-shadow-md);
+    transform: translateY(-1px);
+}
+
+.metric-row:has(.status-critical) {
+    border-left-color: var(--ow-critical);
+}
+
+.metric-row:has(.status-warning) {
+    border-left-color: var(--ow-warning);
+}
+
+.metric-row:has(.status-ok) {
+    border-left-color: var(--ow-success);
+}
+
+.metric-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    max-width: 180px;
+    color: var(--ow-text-primary);
+}
+
+/* Repère de la métrique tracée sur le graphique.
+   `outline` et non `border` : l'outline n'occupe aucune place dans le flux,
+   donc rien n'est décalé, et surtout elle laisse intacte la bordure gauche
+   de .metric-row qui code déjà le statut (critique / alerte).
+   L'or est codé en dur, pas pris dans les tokens --ow-* : il doit reprendre
+   exactement la couleur du point sélectionné que Chart.js dessine dans le
+   canvas (#FFD700), donc la même dans les deux thèmes.
+   La règle couvre aussi :hover, plus spécifique, qui écraserait sinon
+   l'ombre dorée au survol. */
+.metric-row_selected,
+.metric-row_selected:hover {
+    outline: 2px solid #FFD700;
+    outline-offset: -1px;
+    box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.18), var(--ow-shadow-md);
+}
+
+.metric-tooltip {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.metric-values {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    font-weight: 600;
+    color: var(--ow-text-secondary);
+}
+
+.progress-bar-compact {
+    width: 100%;
+    height: 6px;
+    background-color: #edeef1;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 6px 0;
+}
+
+.progress-bar-compact div {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+/* Status Colors - Compact Badges */
+.status-ok,
+.status-warning,
+.status-critical {
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+}
+
+.status-ok {
+    background-color: var(--ow-success-soft);
+    color: var(--ow-success);
+}
+
+.status-warning {
+    background-color: var(--ow-warning-soft);
+    color: var(--ow-warning);
+}
+
+.status-critical {
+    background-color: var(--ow-critical-soft);
+    color: var(--ow-critical);
+}
+
+/* Same class is reused as the progress-bar fill: force a solid color there
+   instead of the pale badge background above. */
+.progress-bar-compact .status-ok,
+.progress-bar-compact .status-warning,
+.progress-bar-compact .status-critical {
+    border-radius: 999px;
+    padding: 0;
+}
+
+.progress-bar-compact .status-ok {
+    background-color: var(--ow-success);
+}
+
+.progress-bar-compact .status-warning {
+    background-color: var(--ow-warning);
+}
+
+.progress-bar-compact .status-critical {
+    background-color: var(--ow-critical);
+}
+
+/* Left panel responsive sizing */
+.slds-size_7-of-12 {
+    width: 58.3333%;
+    flex: 0 0 58.3333%;
+    max-width: 58.3333%;
+}
+
+.slds-size_5-of-12 {
+    width: 41.6667%;
+    flex: 0 0 41.6667%;
+    max-width: 41.6667%;
+}
+
+/* Settings Modal */
+.settings-modal-large {
+    max-width: 900px;
+    min-height: 500px;
+}
+
+.settings-categories-container {
+    max-height: 450px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.category-section {
+    margin-bottom: 20px;
+    background: var(--ow-surface-alt);
+    border-radius: var(--ow-radius-md);
+    padding: 14px;
+}
+
+.category-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ow-border);
+}
+
+.category-header h3 {
+    color: var(--ow-text-primary);
+    font-weight: 700;
+}
+
+.category-count {
+    color: var(--ow-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 400;
+    margin-left: 4px;
+}
+
+/* slds-m-right_small ne suffit visiblement pas à créer un espace visible
+   entre l'icône d'avertissement et le texte qui suit (bandeaux "Attention"
+   etc.) : renforcé explicitement plutôt que de dépendre de la classe SLDS. */
+lightning-icon.slds-m-right_small {
+    margin-right: 10px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+}
+
+.metric-item {
+    background: var(--ow-surface);
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-sm);
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.metric-item:hover {
+    background: var(--ow-accent-soft);
+    border-color: var(--ow-accent);
+    box-shadow: var(--ow-shadow-sm);
+}
+
+.metric-item-content {
+    display: flex;
+    align-items: center;
+}
+
+.ow-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.ow-checkbox-row input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.ow-checkbox-box {
+    position: relative;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--ow-border);
+    border-radius: 4px;
+    background: var(--ow-surface);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.ow-checkbox-row input:checked + .ow-checkbox-box {
+    background: var(--ow-accent);
+    border-color: var(--ow-accent);
+}
+
+.ow-checkbox-row input:checked + .ow-checkbox-box::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.ow-checkbox-text {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ow-text-primary);
+}
+
+/* Dans la grille de métriques (Paramètres), les libellés sont courts et la
+   cellule a une largeur fixe : on les tronque plutôt que de faire déborder
+   la grille. Les autres cases à cocher (phrases de confirmation) doivent
+   au contraire s'enrouler normalement. */
+.metrics-grid .ow-checkbox-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.settings-categories-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.settings-categories-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.settings-categories-container::-webkit-scrollbar-thumb {
+    background: #c9c9c9;
+    border-radius: 3px;
+}
+
+.settings-categories-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* ========== SCHEDULE TAB ========== */
+
+.schedule-section {
+    background: var(--ow-surface);
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-lg);
+    box-shadow: var(--ow-shadow-sm);
+    padding: 1.25rem;
+}
+
+.empty-state {
+    background: var(--ow-surface-alt);
+    color: var(--ow-text-secondary);
+    border-radius: var(--ow-radius-md);
+}
+
+/* Remplace slds-text-color_error : cette classe SLDS a une couleur fixe, pas
+   adaptée au thème sombre (contraste insuffisant sur fond sombre). */
+.ow-error-text {
+    color: var(--ow-critical);
+}
+
+.empty-state lightning-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--ow-accent-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-accent);
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.slds-table_bordered {
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-md);
+    overflow: hidden;
+}
+
+.slds-table thead th {
+    background: var(--ow-surface-alt);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.6875rem;
+    color: var(--ow-text-secondary);
+}
+
+lightning-radio-group {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+/* ========== CONTRÔLES CUSTOM (remplacent lightning-radio-group "button",
+   lightning-slider et lightning-input type="toggle" : leur texte interne
+   restait sombre/illisible en thème sombre malgré les hooks de style
+   tentés — écrits ici en HTML natif, entièrement gouvernés par nos
+   tokens --ow-*, pas de dépendance à un hook non documenté). ========== */
+
+.ow-field-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ow-text-secondary);
+    margin-bottom: 6px;
+}
+
+.ow-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 1rem;
+}
+
+.ow-btn-group-item {
+    border: 1px solid var(--ow-border);
+    background: var(--ow-surface);
+    color: var(--ow-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: var(--ow-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.ow-btn-group-item:hover {
+    background: var(--ow-accent-soft);
+    color: var(--ow-accent);
+    border-color: var(--ow-accent);
+}
+
+.ow-btn-group-item.active {
+    background: var(--ow-accent);
+    color: #ffffff;
+    border-color: var(--ow-accent);
+}
+
+.ow-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ow-border);
+    outline: none;
+    margin: 8px 0 4px;
+}
+
+.ow-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--ow-accent);
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: var(--ow-shadow-sm);
+}
+
+.ow-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--ow-accent);
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: var(--ow-shadow-sm);
+}
+
+.ow-slider-range {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6875rem;
+    color: var(--ow-text-secondary);
+    margin-bottom: 1rem;
+}
+
+.ow-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.ow-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.ow-toggle-track {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--ow-border);
+    transition: background-color 0.15s ease;
+}
+
+.ow-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.15s ease;
+    box-shadow: var(--ow-shadow-sm);
+}
+
+.ow-toggle input:checked + .ow-toggle-track {
+    background: var(--ow-accent);
+}
+
+.ow-toggle input:checked + .ow-toggle-track .ow-toggle-thumb {
+    transform: translateX(16px);
+}
+
+.ow-toggle-label-text {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ow-text-primary);
+}
+
+.slds-theme_info {
+    background-color: var(--ow-accent-soft);
+    border-left: 3px solid var(--ow-accent);
+    border-radius: var(--ow-radius-sm);
+    color: var(--ow-text-primary);
+}
+
+.slds-theme_warning {
+    background-color: var(--ow-warning-soft);
+    border-left: 3px solid var(--ow-warning);
+    border-radius: var(--ow-radius-sm);
+    color: var(--ow-text-primary);
+}
+
+.slds-theme_error {
+    background-color: var(--ow-critical-soft);
+    border-left: 3px solid var(--ow-critical);
+    border-radius: var(--ow-radius-sm);
+    color: var(--ow-text-primary);
+}
+
+fieldset:disabled {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* ========== PURGE TAB ========== */
+
+.purge-stats-row {
+    margin-bottom: 1.25rem;
+}
+
+.stat-card {
+    background: var(--ow-surface);
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-lg);
+    box-shadow: var(--ow-shadow-sm);
+    padding: 1.25rem 1rem;
+    text-align: center;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.stat-card:hover {
+    box-shadow: var(--ow-shadow-md);
+    transform: translateY(-2px);
+}
+
+.stat-card lightning-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: var(--ow-accent-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-accent);
+    padding: 9px;
+    box-sizing: border-box;
+}
+
+/* Variété de couleur par carte (appliquée via une classe sur le stat-card) */
+.stat-card.stat-teal lightning-icon {
+    background: var(--ow-teal-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-teal);
+}
+
+.stat-card.stat-amber lightning-icon {
+    background: var(--ow-amber-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-amber);
+}
+
+/* Icône d'en-tête de section (Planification, Purge, Alertes...), même
+   traitement "badge coloré" que les stat-cards, en plus discret. */
+.section-icon {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--ow-accent-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-accent);
+    padding: 5px;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.section-icon.icon-teal {
+    background: var(--ow-teal-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-teal);
+}
+
+.section-icon.icon-amber {
+    background: var(--ow-amber-soft);
+    --sds-c-icon-color-foreground-default: var(--ow-amber);
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--ow-text-primary);
+    margin: 0.5rem 0 0;
+    letter-spacing: -0.01em;
+}
+
+.stat-label {
+    font-size: 0.6875rem;
+    color: var(--ow-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 4px;
+}
+
+.purge-section,
+.purge-schedule-section {
+    background: var(--ow-surface);
+    border-radius: var(--ow-radius-lg);
+    border: 1px solid var(--ow-border);
+    box-shadow: var(--ow-shadow-sm);
+    padding: 1.25rem;
+}
+
+.purge-preview {
+    border-left: 3px solid var(--ow-text-secondary);
+    border-radius: var(--ow-radius-sm);
+    background: var(--ow-surface-alt) !important;
+}
+
+.purge-bar {
+    display: flex;
+    width: 100%;
+    height: 16px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #e5e5e5;
+}
+
+.purge-bar-kept {
+    background-color: var(--ow-success);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.purge-bar-purge {
+    background-color: var(--ow-critical);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.purge-legend {
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.legend-kept .legend-dot {
+    background-color: var(--ow-success);
+}
+
+.legend-purge .legend-dot {
+    background-color: var(--ow-critical);
+}
+
+/* ========== ALERTES TAB ========== */
+
+.alert-section {
+    background: var(--ow-surface);
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-lg);
+    box-shadow: var(--ow-shadow-sm);
+    padding: 1.25rem;
+}
+
+.alert-metric-row {
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--ow-border);
+}
+
+.alert-metric-row:last-child {
+    border-bottom: none;
+}
+
+.alert-metric-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ow-text-primary);
+}
+
+.alert-threshold-field {
+    width: 110px;
+}
+
+/* ========== MODALS ========== */
+
+.slds-modal__header {
+    position: relative;
+    border-top: 4px solid var(--ow-accent);
+    border-top-left-radius: var(--ow-radius-lg);
+    border-top-right-radius: var(--ow-radius-lg);
+}
+
+/* lightning-button-icon variant="bare-inverse" suppose un bandeau d'en-tête
+   coloré (icône blanche fixe) : sur notre en-tête devenu --ow-surface (blanc
+   en thème clair), l'icône blanche y devenait invisible, et en thème sombre
+   elle ne s'affichait pas non plus correctement. Bouton natif + SVG inline
+   (même technique que le bouton thème clair/sombre) pour un rendu fiable et
+   cohérent avec les tokens --ow-* dans les deux thèmes. */
+.modal-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    background: transparent;
+    color: var(--ow-text-secondary);
+    border-radius: 999px;
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.modal-close-btn:hover {
+    background: var(--ow-accent-soft);
+    color: var(--ow-accent);
+}
+
+.modal-close-icon {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    fill: none;
+}
+
+/* ========== ADMIN - INSTALLATION / MAINTENANCE ========== */
+
+.ow-check-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-sm);
+    overflow: hidden;
+}
+
+.ow-check-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--ow-surface-alt);
+    border-bottom: 1px solid var(--ow-border);
+    font-size: 0.8125rem;
+}
+
+.ow-check-list li:last-child {
+    border-bottom: none;
+}
+
+.ow-check-label {
+    color: var(--ow-text-secondary);
+}
+
+.ow-check-ok {
+    color: var(--ow-success);
+    font-weight: 600;
+}
+
+.ow-check-missing {
+    color: var(--ow-critical);
+    font-weight: 600;
+}
+
+.ow-check-neutral {
+    color: var(--ow-text-primary);
+    font-weight: 600;
+}
+
+/* Une action de maintenance : le bouton, puis l'explication de ce qu'il fait
+   et pourquoi (ces actions sont rares et lourdes de conséquences). */
+.ow-maintenance-action {
+    display: grid;
+    grid-template-columns: minmax(220px, auto) 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 12px 0;
+    border-top: 1px solid var(--ow-border);
+}
+
+.ow-maintenance-action p {
+    margin: 0;
+}
+
+@media (max-width: 640px) {
+    .ow-maintenance-action {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========== ALERTES - HEURE D'ENVOI + ANNUAIRE DES ADMINS ========== */
+
+/* Les deux boutons de fréquence et l'heure d'envoi côte à côte, qui repassent
+   l'un sous l'autre quand la place manque. */
+.ow-sendtime-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+}
+
+.ow-sendtime {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-sm);
+    background: var(--ow-surface-alt);
+    font-size: 0.8125rem;
+}
+
+.ow-sendtime-icon {
+    --slds-c-icon-color-foreground-default: var(--ow-accent);
+}
+
+.ow-sendtime-label {
+    color: var(--ow-text-secondary);
+}
+
+.ow-sendtime-value {
+    color: var(--ow-text-primary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.ow-sendtime-hint {
+    color: var(--ow-text-secondary);
+    font-style: italic;
+}
+
+.ow-sendtime-who {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 2px;
+    padding: 0;
+    border: 1px solid var(--ow-border);
+    border-radius: 50%;
+    background: var(--ow-surface);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.ow-sendtime-who:hover,
+.ow-sendtime-who:focus-visible {
+    background: var(--ow-accent-soft);
+    border-color: var(--ow-accent);
+}
+
+.ow-sendtime-who lightning-icon {
+    --slds-c-icon-color-foreground-default: var(--ow-accent);
+}
+
+.ow-admin-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-sm);
+    overflow: hidden;
+}
+
+.ow-admin-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    padding: 8px 12px;
+    background: var(--ow-surface-alt);
+    border-bottom: 1px solid var(--ow-border);
+}
+
+.ow-admin-list li:last-child {
+    border-bottom: none;
+}
+
+.ow-admin-name {
+    color: var(--ow-text-primary);
+    font-weight: 600;
+}
+
+.ow-admin-email {
+    color: var(--ow-text-secondary);
+    font-size: 0.8125rem;
+}
+
+.ow-admin-permset-note {
+    margin: 16px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--ow-border);
+    color: var(--ow-text-secondary);
+    font-size: 0.8125rem;
+}
+
+.ow-admin-permset-note strong {
+    color: var(--ow-text-primary);
+}
+
+/* La précision entre parenthèses passe à la ligne, pour ne pas noyer le nom
+   du Permission Set à demander au milieu de la phrase. */
+.ow-admin-permset-hint {
+    display: block;
+}
+
+/* ========== ADMIN - TYPEAHEAD RECHERCHE UTILISATEUR ========== */
+
+.ow-admin-search-wrapper {
+    position: relative;
+}
+
+.ow-search-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--ow-surface);
+    border: 1px solid var(--ow-border);
+    border-radius: var(--ow-radius-lg);
+    box-shadow: var(--ow-shadow-md);
+}
+
+/* <button> pour être atteignable au clavier : les styles natifs du bouton
+   sont donc remis à zéro. */
+.ow-search-dropdown-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: var(--ow-radius-sm);
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.ow-search-dropdown-item:hover,
+.ow-search-dropdown-item:focus-visible {
+    background: var(--ow-accent-soft);
+}
+
+.ow-search-dropdown-item:focus-visible {
+    outline: 2px solid var(--ow-accent);
+    outline-offset: -2px;
+}
+
+.ow-search-dropdown-name {
+    color: var(--ow-text-primary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ow-search-dropdown-email {
+    color: var(--ow-text-secondary);
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ow-search-dropdown-empty {
+    padding: 10px;
+    color: var(--ow-text-secondary);
+    font-size: 0.8125rem;
+    text-align: center;
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Alert_Send_Time__c</fullName>
+    <defaultValue>&quot;15:00&quot;</defaultValue>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <inlineHelpText>Heure d&apos;envoi (HH:MM) du mail récapitulatif quotidien d&apos;alertes OrgWatch</inlineHelpText>
+    <label>Alert Send Time</label>
+    <length>5</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

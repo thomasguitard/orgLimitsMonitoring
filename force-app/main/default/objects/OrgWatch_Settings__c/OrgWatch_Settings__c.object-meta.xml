@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>Hierarchy</customSettingsType>
+    <description>Paramètres globaux de l&apos;application OrgWatch (ex: heure d&apos;envoi du mail d&apos;alertes quotidien)</description>
+    <enableFeeds>false</enableFeeds>
+    <label>OrgWatch Settings</label>
+    <visibility>Public</visibility>
+</CustomObject>

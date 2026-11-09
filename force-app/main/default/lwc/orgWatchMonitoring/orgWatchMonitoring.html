@@ -1,0 +1,1308 @@
+<template>
+    <!-- Utilisateur sans aucun des deux Permission Sets OrgWatch : aucun
+         onglet ne doit être rendu, seulement l'explication de la marche à
+         suivre. Le garde-fou serveur (assertOrgWatchAccess) reste la vraie
+         barrière ; ceci évite d'afficher une coquille vide d'onglets. -->
+    <template if:true={showAccessDenied}>
+        <div class="app-shell">
+            <lightning-card>
+                <div class="slds-p-around_large slds-text-align_center">
+                    <lightning-icon icon-name="utility:lock" size="small" variant="warning" class="slds-m-bottom_small"></lightning-icon>
+                    <h2 class="slds-text-heading_small slds-m-bottom_x-small">{labels.accessDeniedTitle}</h2>
+                    <p class="ow-error-text">{labels.accessDeniedMessage}</p>
+                </div>
+            </lightning-card>
+        </div>
+    </template>
+
+    <template if:true={hasOrgWatchAccess}>
+    <div class="app-shell">
+    <lightning-card>
+        <div class="app-navbar">
+            <span class="brand-logo-badge">
+                <img src={logoUrl} alt={labels.cardTitle} class="brand-logo" />
+                <span class="brand-logo-text">{labels.cardTitle}</span>
+            </span>
+
+            <nav class="tab-nav">
+                <button type="button" class={monitoringTabClass} data-tab="monitoring" onclick={handleTabChange}>
+                    <lightning-icon icon-name="utility:chart" size="xx-small" class="tab-nav-icon"></lightning-icon>
+                    <span>{labels.tabMonitoring}</span>
+                </button>
+                <button type="button" class={alertsTabClass} data-tab="alerts" onclick={handleTabChange}>
+                    <lightning-icon icon-name="utility:notification" size="xx-small" class="tab-nav-icon"></lightning-icon>
+                    <span>{labels.tabAlerts}</span>
+                </button>
+                <!-- Onglets réservés au Permission Set "OrgWatch - Admin",
+                     regroupés en fin de barre : les deux premiers onglets sont
+                     ainsi les mêmes pour tout le monde, et l'interface d'un
+                     non-admin n'est plus l'interface admin avec des trous. -->
+                <template if:true={isAdminUser}>
+                    <button type="button" class={scheduleTabClass} data-tab="schedule" onclick={handleTabChange}>
+                        <lightning-icon icon-name="utility:clock" size="xx-small" class="tab-nav-icon"></lightning-icon>
+                        <span>{labels.tabSchedule}</span>
+                    </button>
+                    <button type="button" class={purgeTabClass} data-tab="purge" onclick={handleTabChange}>
+                        <lightning-icon icon-name="utility:delete" size="xx-small" class="tab-nav-icon"></lightning-icon>
+                        <span>{labels.tabPurge}</span>
+                    </button>
+                    <button type="button" class={adminTabClass} data-tab="admin" onclick={handleTabChange}>
+                        <lightning-icon icon-name="utility:einstein" size="xx-small" class="tab-nav-icon"></lightning-icon>
+                        <span>{labels.tabAdmin}</span>
+                    </button>
+                </template>
+            </nav>
+
+            <div class="header-controls">
+                <div class="lang-switch">
+                    <button type="button" class={frButtonClass} onclick={setLanguageFr}>FR</button>
+                    <button type="button" class={enButtonClass} onclick={setLanguageEn}>EN</button>
+                </div>
+                <button type="button" class="icon-toggle-btn" onclick={toggleDarkMode} aria-label={darkModeAlt} title={darkModeAlt}>
+                    <template if:false={isDarkMode}>
+                        <svg viewBox="0 0 24 24" class="theme-icon" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4.5"></circle>
+                            <g stroke-linecap="round">
+                                <line x1="12" y1="1.5" x2="12" y2="4"></line>
+                                <line x1="12" y1="20" x2="12" y2="22.5"></line>
+                                <line x1="1.5" y1="12" x2="4" y2="12"></line>
+                                <line x1="20" y1="12" x2="22.5" y2="12"></line>
+                                <line x1="4.6" y1="4.6" x2="6.3" y2="6.3"></line>
+                                <line x1="17.7" y1="17.7" x2="19.4" y2="19.4"></line>
+                                <line x1="4.6" y1="19.4" x2="6.3" y2="17.7"></line>
+                                <line x1="17.7" y1="6.3" x2="19.4" y2="4.6"></line>
+                            </g>
+                        </svg>
+                    </template>
+                    <template if:true={isDarkMode}>
+                        <svg viewBox="0 0 24 24" class="theme-icon" aria-hidden="true">
+                            <path d="M20.6 15.4a9 9 0 1 1-12-12 7.2 7.2 0 0 0 12 12z"></path>
+                        </svg>
+                    </template>
+                </button>
+                <button type="button" class="icon-toggle-btn" onclick={openSettings} aria-label={labels.settingsAlt} title={labels.settingsAlt}>
+                    <svg viewBox="0 0 24 24" class="theme-icon" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M19.14,12.94c0.04,-0.3 0.06,-0.61 0.06,-0.94c0,-0.32 -0.02,-0.64 -0.07,-0.94l2.03,-1.58c0.18,-0.14 0.23,-0.41 0.12,-0.61l-1.92,-3.32c-0.12,-0.22 -0.37,-0.29 -0.59,-0.22l-2.39,0.96c-0.5,-0.38 -1.03,-0.7 -1.62,-0.94L14.4,2.81c-0.04,-0.24 -0.24,-0.41 -0.48,-0.41h-3.84c-0.24,0 -0.43,0.17 -0.47,0.41L9.25,5.35C8.66,5.59 8.12,5.92 7.63,6.29L5.24,5.33c-0.22,-0.08 -0.47,0 -0.59,0.22L2.74,8.87C2.62,9.08 2.66,9.34 2.86,9.48l2.03,1.58C4.84,11.36 4.8,11.69 4.8,12s0.02,0.64 0.07,0.94l-2.03,1.58c-0.18,0.14 -0.23,0.41 -0.12,0.61l1.92,3.32c0.12,0.22 0.37,0.29 0.59,0.22l2.39,-0.96c0.5,0.38 1.03,0.7 1.62,0.94l0.36,2.54c0.05,0.24 0.24,0.41 0.48,0.41h3.84c0.24,0 0.44,-0.17 0.47,-0.41l0.36,-2.54c0.59,-0.24 1.13,-0.56 1.62,-0.94l2.39,0.96c0.22,0.08 0.47,0 0.59,-0.22l1.92,-3.32c0.12,-0.22 0.07,-0.47 -0.12,-0.61L19.14,12.94zM12,15.6c-1.98,0 -3.6,-1.62 -3.6,-3.6s1.62,-3.6 3.6,-3.6s3.6,1.62 3.6,3.6S13.98,15.6 12,15.6z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+            <div class={monitoringTabWrapperClass}>
+                    <template if:true={showInitialSpinner}>
+                        <div class="loading-screen">
+                            <lightning-spinner alternative-text={labels.monitoringSpinner} size="large"></lightning-spinner>
+                        </div>
+                    </template>
+                <div class="slds-grid main-container">
+                    <div class={leftPanelClass}>
+                        <div class="slds-p-around_medium">
+                            <div class="ow-field-label">{labels.selectMetric}</div>
+                            <lightning-combobox
+                                name="limitSelector"
+                                variant="label-hidden"
+                                label={labels.selectMetric}
+                                value={selectedLimit}
+                                options={limitOptions}
+                                onchange={handleLimitChange}>
+                            </lightning-combobox>
+
+                            <div class="slds-m-top_medium slds-box slds-box_x-small chart-container">
+                                <canvas class="linechart" lwc:dom="manual" width="800" height="380"></canvas>
+                            </div>
+
+                            <template if:true={error}>
+                                <p class="ow-error-text slds-m-top_small">{error}</p>
+                            </template>
+                        </div>
+                    </div>
+
+                    <template if:true={hasSnapshot}>
+                        <div class="slds-col slds-size_5-of-12 snapshot-panel">
+                            <div class="slds-p-around_small">
+                                <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                                    <div>
+                                        <h2 class="slds-text-heading_small">{labels.snapshotTitle}</h2>
+                                        <p class="slds-text-body_small slds-text-color_weak">{selectedSnapshot.formattedDate}</p>
+                                    </div>
+                                    <lightning-button-icon
+                                        icon-name="utility:close"
+                                        alternative-text={labels.closeAlt}
+                                        variant="bare"
+                                        onclick={closeSnapshot}>
+                                    </lightning-button-icon>
+                                </div>
+
+                                <div class="snapshot-content">
+                                    <template for:each={snapshotMetrics} for:item="metric">
+                                        <div key={metric.name}
+                                             class={metric.rowClass}
+                                             title={metric.rowTitle}
+                                             data-metric={metric.name}
+                                             role="button"
+                                             tabindex="0"
+                                             onclick={handleSnapshotMetricClick}
+                                             onkeydown={handleSnapshotMetricKeydown}>
+                                            <div class="slds-grid slds-grid_align-spread slds-m-bottom_xxx-small">
+                                                <div class="slds-grid slds-grid_vertical-align-center">
+                                                    <span class="metric-name slds-truncate slds-m-right_xx-small" title={metric.friendlyName}>
+                                                        {metric.friendlyName}
+                                                    </span>
+                                                    <lightning-helptext
+                                                        content={metric.description}
+                                                        icon-variant="bare"
+                                                        class="metric-tooltip">
+                                                    </lightning-helptext>
+                                                </div>
+                                                <span class={metric.statusClass}>{metric.percentage}%</span>
+                                            </div>
+
+                                            <div class="progress-bar-compact">
+                                                <div class={metric.statusClass} style={metric.progressStyle}></div>
+                                            </div>
+
+                                            <div class="slds-grid slds-grid_align-spread metric-values">
+                                                <span>{metric.currentDisplay}</span>
+                                                <span class="slds-text-color_weak">/ {metric.maxDisplay}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                </div>
+
+            <template if:true={isScheduleTabActive}>
+                <div class="slds-p-around_medium">
+
+                    <div class="schedule-section">
+                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+                            <h2 class="slds-text-heading_medium">{labels.activeSchedulesTitle}</h2>
+                                <lightning-button
+                                    label={labels.refresh}
+                                    icon-name="utility:refresh"
+                                    class="refresh-button"
+                                    onclick={refreshSchedules}>
+                                </lightning-button>
+                        </div>
+
+                        <template if:true={loadingSchedules}>
+                            <lightning-spinner alternative-text={labels.loading} size="small"></lightning-spinner>
+                        </template>
+
+                        <template if:false={loadingSchedules}>
+                            <template if:true={hasActiveSchedules}>
+                                <div class="slds-box slds-theme_shade">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th scope="col"><div class="slds-truncate">{labels.colJobName}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.colFrequency}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.colNextRun}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.colStatus}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.colActions}</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={activeSchedules} for:item="schedule">
+                                                <tr key={schedule.jobId} class="slds-hint-parent">
+                                                    <td><div class="slds-truncate">{schedule.jobName}</div></td>
+                                                    <td><div class="slds-truncate">{schedule.frequency}</div></td>
+                                                    <td><div class="slds-truncate">{schedule.nextRun}</div></td>
+                                                    <td>
+                                                        <lightning-badge label={schedule.state} variant={schedule.badgeVariant}></lightning-badge>
+                                                    </td>
+                                                    <td>
+                                                        <lightning-button-icon
+                                                            icon-name="utility:delete"
+                                                            alternative-text={labels.deleteAlt}
+                                                            variant="border-filled"
+                                                            data-job-id={schedule.jobId}
+                                                            onclick={deleteSchedule}>
+                                                        </lightning-button-icon>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+
+                            <template if:false={hasActiveSchedules}>
+                                <div class="slds-box slds-text-align_center slds-p-around_medium empty-state">
+                                    <lightning-icon icon-name="utility:clock" size="large" class="slds-m-bottom_small"></lightning-icon>
+                                    <p class="slds-text-heading_small">{labels.noActiveSchedule}</p>
+                                    <p class="slds-text-color_weak">{labels.configureBelowHint}</p>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+
+                    <div class="schedule-section slds-m-top_large">
+                        <h2 class="slds-text-heading_medium slds-m-bottom_medium">
+                            <lightning-icon icon-name="utility:add" size="small" class="slds-m-right_x-small section-icon"></lightning-icon>
+                            {labels.newScheduleTitle}
+                        </h2>
+
+                        <template if:true={hasActiveSchedules}>
+                            <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                                <div class="slds-grid slds-grid_vertical-align-center">
+                                    <lightning-icon icon-name="utility:warning" size="small" variant="warning" class="slds-m-right_small"></lightning-icon>
+                                    <div>
+                                        <p class="slds-text-heading_small">{labels.attentionTitle}</p>
+                                        <p>{labels.disableExistingHint}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <fieldset class="slds-box slds-p-around_medium" disabled={hasActiveSchedules}>
+                            <legend class="slds-text-heading_small slds-m-bottom_small">{labels.exportFrequencyLegend}</legend>
+
+                            <div class="ow-field-label">{labels.chooseFrequency}</div>
+                            <div class="ow-btn-group">
+                                <button type="button" class={freq15minClass} data-value="15min" onclick={handleFrequencyChange}>{labels.freq15min}</button>
+                                <button type="button" class={freq30minClass} data-value="30min" onclick={handleFrequencyChange}>{labels.freq30min}</button>
+                                <button type="button" class={freqHourlyClass} data-value="hourly" onclick={handleFrequencyChange}>{labels.freqHourly}</button>
+                                <button type="button" class={freqDailyClass} data-value="daily" onclick={handleFrequencyChange}>{labels.freqDaily}</button>
+                            </div>
+
+                            <template if:true={showTimeSelector}>
+                                <div class="slds-m-top_medium">
+                                    <div class="ow-field-label">{timeSelectorLabel}</div>
+                                    <lightning-combobox
+                                        name="timeSelector"
+                                        variant="label-hidden"
+                                        label={timeSelectorLabel}
+                                        value={selectedTime}
+                                        options={timeOptions}
+                                        placeholder={labels.selectTimePlaceholder}
+                                        onchange={handleTimeChange}
+                                        required>
+                                    </lightning-combobox>
+                                </div>
+                            </template>
+
+                            <template if:true={scheduleSummary}>
+                                <div class="slds-box slds-theme_info slds-m-top_medium">
+                                    <p class="slds-text-heading_small slds-m-bottom_x-small">
+                                        <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_x-small"></lightning-icon>
+                                        {labels.scheduleSummaryTitle}
+                                    </p>
+                                    <p>{scheduleSummary}</p>
+                                </div>
+                            </template>
+
+                            <div class="slds-m-top_medium">
+                                <lightning-button
+                                    label={labels.activateSchedule}
+                                    variant="brand"
+                                    icon-name="utility:check"
+                                    onclick={createSchedule}
+                                    disabled={isScheduleButtonDisabled}>
+                                </lightning-button>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                </div>
+            </template>
+
+            <template if:true={isPurgeTabActive}>
+                <div class="slds-p-around_medium">
+
+                    <div class="slds-grid slds-gutters slds-wrap purge-stats-row">
+                        <div class="slds-col slds-size_1-of-3">
+                            <div class="stat-card">
+                                <lightning-icon icon-name="utility:file" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                                <p class="stat-value">{totalFileCount}</p>
+                                <p class="stat-label">{labels.statFilesPresent}</p>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <div class="stat-card stat-teal">
+                                <lightning-icon icon-name="utility:storage" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                                <p class="stat-value">{totalSizeFormatted}</p>
+                                <p class="stat-label">{labels.statTotalSize}</p>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <div class="stat-card stat-amber">
+                                <lightning-icon icon-name="utility:date_time" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                                <p class="stat-value">{oldestFileDateFormatted}</p>
+                                <p class="stat-label">{labels.statOldestFile}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <template if:true={loadingDataFiles}>
+                        <lightning-spinner alternative-text={labels.loading} size="small"></lightning-spinner>
+                    </template>
+
+                    <template if:true={dataFilesError}>
+                        <p class="ow-error-text slds-m-top_small">{dataFilesError}</p>
+                    </template>
+
+                    <div class="slds-box slds-m-top_large purge-schedule-section">
+                        <h2 class="slds-text-heading_medium slds-m-bottom_small">
+                            <lightning-icon icon-name="utility:clock" size="small" class="slds-m-right_x-small section-icon icon-teal"></lightning-icon>
+                            {labels.purgeAutoTitle}
+                        </h2>
+
+                        <template if:true={loadingPurgeSchedule}>
+                            <lightning-spinner alternative-text={labels.loading} size="small"></lightning-spinner>
+                        </template>
+
+                        <template if:false={loadingPurgeSchedule}>
+                            <template if:true={hasActivePurgeSchedule}>
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+                                    <div>
+                                        <p>
+                                            {labels.purgeAutoActivePrefix}<strong>{labels.purgeAutoDaily}</strong>{labels.purgeAutoActiveMid}<strong>{activePurgeSchedule.timeValue}</strong>{labels.purgeAutoActiveSuffix}<strong>{activePurgeSchedule.ageDays}</strong>{labels.purgeAutoDaysSuffix}
+                                        </p>
+                                        <p class="slds-text-body_small slds-text-color_weak">
+                                            {labels.nextRunLabel}{activePurgeSchedule.nextRunFormatted}
+                                        </p>
+                                        <template if:true={activePurgeSchedule.lastRunDate}>
+                                            <template if:false={activePurgeSchedule.lastRunFailed}>
+                                                <p class="slds-text-body_small slds-text-color_success slds-m-top_xx-small">
+                                                    <lightning-icon icon-name="utility:success" size="xx-small" variant="success" class="slds-m-right_xx-small"></lightning-icon>
+                                                    {labels.lastRunSuccessPrefix}{activePurgeSchedule.lastRunFormatted}
+                                                </p>
+                                            </template>
+                                            <template if:true={activePurgeSchedule.lastRunFailed}>
+                                                <div class="slds-box slds-theme_error slds-m-top_x-small">
+                                                    <p>
+                                                        <lightning-icon icon-name="utility:error" size="xx-small" variant="inverse" class="slds-m-right_xx-small"></lightning-icon>
+                                                        {labels.lastRunFailedPrefix}{activePurgeSchedule.lastRunFormatted}{labels.lastRunFailedMid}{activePurgeSchedule.lastRunError}
+                                                    </p>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                    <lightning-button-icon
+                                        icon-name="utility:delete"
+                                        alternative-text={labels.disableAutoPurgeAlt}
+                                        variant="border-filled"
+                                        onclick={deletePurgeSchedule}>
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+
+                            <template if:false={hasActivePurgeSchedule}>
+                                <div class="slds-grid slds-grid_vertical-align-end slds-gutters slds-wrap">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="ow-field-label">{labels.deleteOlderThanLabel}</div>
+                                        <lightning-input
+                                            type="number"
+                                            variant="label-hidden"
+                                            label={labels.deleteOlderThanLabel}
+                                            value={scheduledPurgeAgeDays}
+                                            min="1"
+                                            onchange={handleScheduledPurgeAgeChange}>
+                                        </lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="ow-field-label">{timeSelectorLabel}</div>
+                                        <lightning-combobox
+                                            name="purgeTimeSelector"
+                                            variant="label-hidden"
+                                            label={timeSelectorLabel}
+                                            value={scheduledPurgeTime}
+                                            options={timeOptions}
+                                            placeholder={labels.selectTimePlaceholder}
+                                            onchange={handleScheduledPurgeTimeChange}>
+                                        </lightning-combobox>
+                                    </div>
+                                    <div class="slds-col">
+                                        <lightning-button
+                                            label={labels.activateAutoPurge}
+                                            variant="brand"
+                                            icon-name="utility:check"
+                                            onclick={openCreatePurgeScheduleConfirm}
+                                            disabled={isCreatePurgeScheduleDisabled}>
+                                        </lightning-button>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+
+                    <template if:true={hasDataFiles}>
+                        <div class="slds-box slds-m-top_large purge-section">
+                            <h2 class="slds-text-heading_medium slds-m-bottom_small">
+                                <lightning-icon icon-name="utility:delete" size="small" class="slds-m-right_x-small section-icon icon-amber"></lightning-icon>
+                                {labels.manualPurgeTitle}
+                            </h2>
+                            <p class="slds-text-color_weak slds-m-bottom_medium">
+                                {labels.manualPurgeHint}
+                            </p>
+
+                            <div class="ow-field-label">{sliderLabel}</div>
+                            <input
+                                type="range"
+                                class="ow-slider"
+                                min="0"
+                                max={maxAgeDays}
+                                step="1"
+                                value={purgeAgeDays}
+                                aria-label={sliderLabel}
+                                oninput={handleAgeSliderChange} />
+                            <div class="ow-slider-range">
+                                <span>0</span>
+                                <span>{maxAgeDays}</span>
+                            </div>
+
+                            <div class="slds-grid slds-m-top_x-small purge-presets">
+                                <template for:each={agePresets} for:item="preset">
+                                    <lightning-button
+                                        key={preset.value}
+                                        label={preset.label}
+                                        variant="neutral"
+                                        size="small"
+                                        class="slds-m-right_xx-small"
+                                        data-value={preset.value}
+                                        onclick={handlePresetClick}>
+                                    </lightning-button>
+                                </template>
+                            </div>
+
+                            <div class="slds-box slds-theme_shade slds-m-top_medium purge-preview">
+                                <p class="slds-text-heading_small slds-m-bottom_x-small">
+                                    {labels.filesOlderThan}{cutoffDateFormatted}
+                                </p>
+
+                                <div class="purge-bar">
+                                    <div class="purge-bar-kept" style={keptBarStyle}></div>
+                                    <div class="purge-bar-purge" style={purgeBarStyle}></div>
+                                </div>
+
+                                <div class="slds-grid slds-grid_align-spread slds-m-top_x-small purge-legend">
+                                    <span class="legend-kept">
+                                        <span class="legend-dot"></span>
+                                        {filesToKeepCount}{labels.keptLegend}{sizeToKeepFormatted}
+                                    </span>
+                                    <span class="legend-purge">
+                                        <span class="legend-dot"></span>
+                                        {filesToPurgeCount}{labels.purgeLegend}{sizeToPurgeFormatted}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="slds-m-top_medium">
+                                <lightning-button
+                                    label={labels.purgeSelected}
+                                    variant="destructive"
+                                    icon-name="utility:delete"
+                                    onclick={openPurgeConfirm}
+                                    disabled={isPurgeButtonDisabled}>
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template if:false={hasDataFiles}>
+                        <template if:false={loadingDataFiles}>
+                            <div class="slds-box slds-text-align_center slds-p-around_medium empty-state slds-m-top_large">
+                                <lightning-icon icon-name="utility:clean" size="large" class="slds-m-bottom_small"></lightning-icon>
+                                <p class="slds-text-heading_small">{labels.noDataFiles}</p>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </template>
+
+            <template if:true={isAlertsTabActive}>
+                <div class="slds-p-around_medium">
+
+                    <div class="alert-status-indicator slds-m-bottom_medium slds-grid slds-grid_vertical-align-center slds-wrap">
+                        <div>
+                            <div class="ow-field-label">{labels.alertStatusLabel}</div>
+                            <label class="ow-toggle">
+                                <input type="checkbox" checked={hasAnyAlertConfigured} onchange={handleAlertStatusToggleChange} />
+                                <span class="ow-toggle-track"><span class="ow-toggle-thumb"></span></span>
+                                <span class="ow-toggle-label-text">{alertStatusToggleText}</span>
+                            </label>
+                        </div>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-left_medium">
+                            {alertMailInfo}
+                        </p>
+                    </div>
+
+                    <template if:false={hasActiveExportSchedule}>
+                        <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <lightning-icon icon-name="utility:warning" size="small" variant="warning" class="slds-m-right_small"></lightning-icon>
+                                <p>{labels.noExportForAlertsWarning}</p>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template if:true={loadingAlertPrefs}>
+                        <lightning-spinner alternative-text={labels.loading} size="small"></lightning-spinner>
+                    </template>
+
+                    <template if:false={loadingAlertPrefs}>
+
+                        <div class="alert-section">
+                            <h2 class="slds-text-heading_medium slds-m-bottom_x-small">{labels.globalThresholdTitle}</h2>
+                            <p class="slds-text-color_weak slds-m-bottom_small">{labels.globalThresholdHint}</p>
+                            <div class="slds-grid slds-gutters slds-grid_vertical-align-end">
+                                <div class="slds-col slds-size_1-of-4">
+                                    <div class="ow-field-label">{labels.thresholdPercentLabel}</div>
+                                    <lightning-input
+                                        type="number"
+                                        variant="label-hidden"
+                                        label={labels.thresholdPercentLabel}
+                                        value={globalThresholdInput}
+                                        min="1"
+                                        max="100"
+                                        onchange={handleGlobalThresholdChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col">
+                                    <lightning-button
+                                        label={labels.applyToAllVisible}
+                                        variant="neutral"
+                                        icon-name="utility:apply"
+                                        onclick={applyGlobalThreshold}>
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert-section slds-m-top_medium">
+                            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
+                                <h2 class="slds-text-heading_medium">{labels.perMetricThresholdsTitle}</h2>
+                                <button type="button" class="ow-danger-text-btn" onclick={openDisableAllAlertsConfirm} disabled={isDisableAllAlertsDisabled}>
+                                    <svg viewBox="0 0 24 24" class="ow-danger-text-icon" aria-hidden="true">
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    </svg>
+                                    {labels.disableAll}
+                                </button>
+                            </div>
+
+                            <template if:true={alertMetricRows.length}>
+                                <template for:each={alertMetricRows} for:item="row">
+                                    <div key={row.name} class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center alert-metric-row">
+                                        <span class="alert-metric-name">{row.label}</span>
+                                        <div class="slds-grid slds-grid_vertical-align-center alert-threshold-field">
+                                            <lightning-input
+                                                type="number"
+                                                variant="label-hidden"
+                                                label={row.label}
+                                                value={row.threshold}
+                                                placeholder={labels.noAlertPlaceholder}
+                                                min="1"
+                                                max="100"
+                                                data-metric={row.name}
+                                                onchange={handleMetricThresholdChange}>
+                                            </lightning-input>
+                                            <span class="slds-m-left_xx-small slds-text-color_weak">%</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </template>
+
+                            <template if:false={alertMetricRows.length}>
+                                <div class="slds-box slds-text-align_center slds-p-around_medium empty-state">
+                                    <p>{labels.noMetricsForAlerts}</p>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="alert-section slds-m-top_medium">
+                            <h2 class="slds-text-heading_medium slds-m-bottom_small">{labels.emailFrequencyTitle}</h2>
+                            <div class="ow-field-label">{labels.receiveDigestLabel}</div>
+                            <div class="ow-sendtime-row">
+                                <div class="ow-btn-group">
+                                    <button type="button" class={emailModeAlwaysClass} data-value="Always" onclick={handleEmailModeClick}>{labels.emailModeAlways}</button>
+                                    <button type="button" class={emailModeOnBreachClass} data-value="OnlyOnBreach" onclick={handleEmailModeClick}>{labels.emailModeOnBreach}</button>
+                                </div>
+
+                                <div class="ow-sendtime">
+                                    <lightning-icon icon-name="utility:clock" size="x-small" class="ow-sendtime-icon"></lightning-icon>
+                                    <span class="ow-sendtime-label">{labels.sendTimeLabel}</span>
+                                    <span class="ow-sendtime-value">{savedAlertSendTime}</span>
+                                    <span class="ow-sendtime-hint">&ndash; {labels.sendTimeAdminOnly}</span>
+                                    <button type="button"
+                                        class="ow-sendtime-who"
+                                        onclick={openAdminDirectory}
+                                        aria-label={labels.sendTimeWhoAlt}
+                                        title={labels.sendTimeWhoAlt}>
+                                        <lightning-icon icon-name="utility:user" size="xx-small"></lightning-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="slds-m-top_medium">
+                            <lightning-button
+                                label={labels.save}
+                                variant="brand"
+                                icon-name="utility:check"
+                                onclick={saveAlertSettings}>
+                            </lightning-button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <template if:true={isAdminUser}>
+                <template if:true={isAdminTabActive}>
+                    <div class="slds-p-around_medium">
+
+                        <div class="slds-box slds-m-bottom_large purge-schedule-section">
+                            <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                                <h2 class="slds-text-heading_medium">
+                                    <lightning-icon icon-name="utility:settings" size="small" class="slds-m-right_x-small section-icon icon-teal"></lightning-icon>
+                                    {labels.maintenanceTitle}
+                                </h2>
+                                <lightning-button
+                                    label={labels.maintenanceRefresh}
+                                    variant="neutral"
+                                    icon-name="utility:refresh"
+                                    onclick={loadSetupStatus}
+                                    disabled={loadingSetupStatus}>
+                                </lightning-button>
+                            </div>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">{labels.maintenanceHint}</p>
+
+                            <template if:true={setupStatus}>
+                                <ul class="ow-check-list slds-m-bottom_medium">
+                                    <li>
+                                        <span class="ow-check-label">{labels.maintenanceLibraryLabel}</span>
+                                        <span class={setupLibraryStatusClass}>{setupLibraryStatusLabel}</span>
+                                    </li>
+                                    <li>
+                                        <span class="ow-check-label">{labels.maintenanceChartLabel}</span>
+                                        <span class={setupChartStatusClass}>{setupChartStatusLabel}</span>
+                                    </li>
+                                    <li>
+                                        <span class="ow-check-label">{labels.maintenanceJobsLabel}</span>
+                                        <span class="ow-check-neutral">{setupStatus.scheduledJobCount}</span>
+                                    </li>
+                                    <li>
+                                        <span class="ow-check-label">{labels.maintenanceFilesLabel}</span>
+                                        <span class="ow-check-neutral">{setupStatus.exportFileCount}</span>
+                                    </li>
+                                </ul>
+                            </template>
+
+                            <div class="ow-maintenance-action">
+                                <div>
+                                    <lightning-button
+                                        label={labels.maintenanceRunSetup}
+                                        variant="brand"
+                                        icon-name="utility:setup"
+                                        onclick={runSetup}
+                                        disabled={runningSetup}>
+                                    </lightning-button>
+                                </div>
+                                <p class="slds-text-body_small slds-text-color_weak">{labels.maintenanceRunSetupHint}</p>
+                            </div>
+
+                            <div class="ow-maintenance-action">
+                                <div>
+                                    <lightning-button
+                                        label={labels.maintenanceUninstallButton}
+                                        variant="neutral"
+                                        icon-name="utility:stop"
+                                        onclick={runPrepareUninstall}
+                                        disabled={runningUninstallPrep}>
+                                    </lightning-button>
+                                </div>
+                                <p class="slds-text-body_small slds-text-color_weak">
+                                    <strong>{labels.maintenanceUninstallTitle}</strong> &ndash; {labels.maintenanceUninstallHint}
+                                </p>
+                            </div>
+
+                            <div class="ow-maintenance-action">
+                                <div>
+                                    <lightning-button
+                                        label={labels.maintenancePurgeAllButton}
+                                        variant="destructive"
+                                        icon-name="utility:delete"
+                                        onclick={openDeleteAllDataConfirm}>
+                                    </lightning-button>
+                                </div>
+                                <p class="slds-text-body_small slds-text-color_weak">
+                                    <strong>{labels.maintenancePurgeAllTitle}</strong> &ndash; {labels.maintenancePurgeAllHint}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="slds-box slds-m-bottom_large purge-schedule-section">
+                            <h2 class="slds-text-heading_medium slds-m-bottom_small">
+                                <lightning-icon icon-name="utility:clock" size="small" class="slds-m-right_x-small section-icon icon-teal"></lightning-icon>
+                                {labels.adminAlertScheduleTitle}
+                            </h2>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">{labels.adminAlertScheduleHint}</p>
+
+                            <div class="slds-grid slds-gutters slds-grid_vertical-align-end">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="ow-field-label">{labels.adminAlertSendTimeLabel}</div>
+                                    <lightning-combobox
+                                        name="adminAlertSendTime"
+                                        variant="label-hidden"
+                                        label={labels.adminAlertSendTimeLabel}
+                                        value={adminAlertSendTime}
+                                        options={timeOptions}
+                                        onchange={handleAdminAlertSendTimeChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-shrink-none">
+                                    <lightning-button
+                                        label={labels.save}
+                                        variant="brand"
+                                        onclick={saveAlertSendTime}
+                                        disabled={savingAlertSendTime}>
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert-section slds-m-bottom_medium">
+                            <div class="slds-grid slds-gutters slds-grid_vertical-align-end">
+                                <div class="slds-col ow-admin-search-wrapper">
+                                    <lightning-input
+                                        type="search"
+                                        label={labels.adminSearchPlaceholder}
+                                        variant="label-hidden"
+                                        placeholder={labels.adminSearchPlaceholder}
+                                        value={adminSearchTerm}
+                                        onchange={handleAdminSearchInput}
+                                        onfocus={handleAdminSearchFocus}
+                                        onblur={handleAdminSearchBlur}>
+                                    </lightning-input>
+                                    <template if:true={showAdminSearchDropdown}>
+                                        <ul class="ow-search-dropdown" role="listbox" aria-label={labels.adminSearchPlaceholder}>
+                                            <template if:true={hasAdminSearchSuggestions}>
+                                                <template for:each={adminSearchSuggestions} for:item="suggestion">
+                                                    <li key={suggestion.userId} role="presentation">
+                                                        <button type="button"
+                                                            role="option"
+                                                            aria-selected="false"
+                                                            class="ow-search-dropdown-item"
+                                                            data-user-id={suggestion.userId}
+                                                            onclick={selectAdminSearchSuggestion}
+                                                            onfocus={handleAdminSuggestionFocus}
+                                                            onblur={handleAdminSearchBlur}>
+                                                            <span class="ow-search-dropdown-name">{suggestion.name}</span>
+                                                            <span class="ow-search-dropdown-email">{suggestion.email}</span>
+                                                        </button>
+                                                    </li>
+                                                </template>
+                                            </template>
+                                            <template if:false={hasAdminSearchSuggestions}>
+                                                <li class="ow-search-dropdown-empty">{labels.adminNoSearchResults}</li>
+                                            </template>
+                                        </ul>
+                                    </template>
+                                </div>
+                                <div class="slds-col slds-shrink-none">
+                                    <lightning-button
+                                        label={labels.adminSearchButton}
+                                        variant="neutral"
+                                        icon-name="utility:search"
+                                        onclick={handleAdminSearch}
+                                        disabled={searchingAdminUsers}>
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <template if:true={loadingAdminUsers}>
+                            <lightning-spinner alternative-text={labels.loading} size="small"></lightning-spinner>
+                        </template>
+
+                        <template if:false={loadingAdminUsers}>
+                            <template if:true={hasAdminUsers}>
+                                <div class="slds-box slds-theme_shade">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th scope="col"><div class="slds-truncate">{labels.adminColName}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.adminColEmail}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.adminColUserPS}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.adminColAdminPS}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.adminColAlerts}</div></th>
+                                                <th scope="col"><div class="slds-truncate">{labels.adminColActions}</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={adminUserRows} for:item="row">
+                                                <tr key={row.userId} class="slds-hint-parent">
+                                                    <td><div class="slds-truncate">{row.name}</div></td>
+                                                    <td><div class="slds-truncate">{row.email}</div></td>
+                                                    <td>
+                                                        <label class="ow-toggle">
+                                                            <input type="checkbox" checked={row.hasUserPS} data-user-id={row.userId} onchange={handleToggleUserPS} />
+                                                            <span class="ow-toggle-track"><span class="ow-toggle-thumb"></span></span>
+                                                            <span class="ow-toggle-label-text">{row.userPsToggleText}</span>
+                                                        </label>
+                                                    </td>
+                                                    <td>
+                                                        <label class="ow-toggle">
+                                                            <input type="checkbox" checked={row.hasAdminPS} data-user-id={row.userId} onchange={handleToggleAdminPS} />
+                                                            <span class="ow-toggle-track"><span class="ow-toggle-thumb"></span></span>
+                                                            <span class="ow-toggle-label-text">{row.adminPsToggleText}</span>
+                                                        </label>
+                                                    </td>
+                                                    <td>
+                                                        <template if:true={row.hasAlertsConfigured}>
+                                                            <span class="status-ok">{labels.adminAlertsYes} ({row.alertEmailMode})</span>
+                                                        </template>
+                                                        <template if:false={row.hasAlertsConfigured}>
+                                                            <span class="slds-text-color_weak">{labels.adminAlertsNo}</span>
+                                                        </template>
+                                                    </td>
+                                                    <td>
+                                                        <template if:true={row.hasAlertsConfigured}>
+                                                            <button type="button" class="ow-danger-text-btn" data-user-id={row.userId} onclick={openDisableUserAlerts}>
+                                                                {labels.adminDisableAlertsBtn}
+                                                            </button>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+
+                            <template if:false={hasAdminUsers}>
+                                <div class="slds-box slds-text-align_center slds-p-around_medium empty-state">
+                                    <lightning-icon icon-name="utility:people" size="large" class="slds-m-bottom_small"></lightning-icon>
+                                    <p class="slds-text-heading_small">{labels.adminNoUsers}</p>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+            </template>
+
+        <template if:true={showSettings}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container settings-modal-large">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={cancelSettings}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.selectMetricsTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <div class="slds-grid slds-gutters slds-m-bottom_small">
+                            <div class="slds-col">
+                                <lightning-button
+                                    label={labels.selectAll}
+                                    variant="neutral"
+                                    icon-name="utility:check"
+                                    onclick={selectAll}>
+                                </lightning-button>
+                                <lightning-button
+                                    label={labels.selectNone}
+                                    variant="neutral"
+                                    icon-name="utility:clear"
+                                    class="slds-m-left_x-small"
+                                    onclick={selectNone}>
+                                </lightning-button>
+                            </div>
+                        </div>
+
+                        <div class="settings-categories-container">
+                            <template if:false={metricsByCategory.length}>
+                                <div class="slds-box slds-text-align_center slds-p-around_medium empty-state">
+                                    <p>{labels.noMetricsAvailable}</p>
+                                </div>
+                            </template>
+                            <template for:each={metricsByCategory} for:item="category">
+                                <div key={category.name} class="category-section">
+                                    <div class="category-header">
+                                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                                            <h3 class="slds-text-heading_small">
+                                                {category.name}
+                                                <span class="category-count">({category.metrics.length})</span>
+                                            </h3>
+                                            <div>
+                                                <lightning-button
+                                                    label={labels.categoryAll}
+                                                    variant="neutral"
+                                                    size="small"
+                                                    data-category={category.name}
+                                                    onclick={selectAllInCategory}>
+                                                </lightning-button>
+                                                <lightning-button
+                                                    label={labels.categoryNone}
+                                                    variant="neutral"
+                                                    size="small"
+                                                    class="slds-m-left_xx-small"
+                                                    data-category={category.name}
+                                                    onclick={selectNoneInCategory}>
+                                                </lightning-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="metrics-grid">
+                                        <template for:each={category.metrics} for:item="metric">
+                                            <div
+                                                key={metric.name}
+                                                class={metric.itemClass}
+                                                data-metric={metric.name}
+                                                data-category={category.name}>
+                                                <div class="metric-item-content">
+                                                    <label class="ow-checkbox-row" title={metric.description}>
+                                                        <input type="checkbox" data-metric={metric.name} checked={metric.checked} onchange={handleMetricToggle} />
+                                                        <span class="ow-checkbox-box"></span>
+                                                        <span class="ow-checkbox-text">{metric.label}</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <div class="slds-grid slds-grid_align-spread">
+                            <div class="slds-text-body_small slds-text-color_weak">
+                                {selectedCount}{labels.metricsSelectedSuffix}
+                            </div>
+                            <div>
+                                <lightning-button
+                                    label={labels.cancel}
+                                    variant="neutral"
+                                    onclick={cancelSettings}>
+                                </lightning-button>
+                                <lightning-button
+                                    label={labels.apply}
+                                    variant="brand"
+                                    class="slds-m-left_x-small"
+                                    onclick={closeSettings}>
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={showPurgeConfirm}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closePurgeConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.confirmPurgeTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <lightning-icon icon-name="utility:warning" size="small" variant="warning" class="slds-m-right_small"></lightning-icon>
+                                <p><strong>{labels.irreversibleWarning}</strong></p>
+                            </div>
+                        </div>
+                        <p class="slds-m-bottom_x-small">
+                            {labels.purgeConfirmTextPrefix}<strong>{filesToPurgeCount}</strong>{labels.purgeConfirmTextMid1}<strong>{sizeToPurgeFormatted}</strong>{labels.purgeConfirmTextMid2}<strong>{cutoffDateFormatted}</strong>.
+                        </p>
+                        <label class="ow-checkbox-row">
+                            <input type="checkbox" checked={purgeConfirmed} onchange={handlePurgeConfirmCheckbox} />
+                            <span class="ow-checkbox-box"></span>
+                            <span class="ow-checkbox-text">{labels.confirmDeleteFilesLabel}</span>
+                        </label>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.cancel} variant="neutral" onclick={closePurgeConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.deletePermanently}
+                            variant="destructive"
+                            class="slds-m-left_x-small"
+                            onclick={confirmPurge}
+                            disabled={isConfirmPurgeDisabled}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={showCreatePurgeScheduleConfirm}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeCreatePurgeScheduleConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.confirmAutoPurgeTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <lightning-icon icon-name="utility:warning" size="small" variant="warning" class="slds-m-right_small"></lightning-icon>
+                                <p>{labels.autoPurgeWarning}</p>
+                            </div>
+                        </div>
+                        <p class="slds-m-bottom_x-small">
+                            {labels.autoPurgeConfirmTextPrefix}<strong>{scheduledPurgeTime}</strong>{labels.autoPurgeConfirmTextMid}<strong>{scheduledPurgeAgeDays}</strong>{labels.autoPurgeConfirmTextSuffix}
+                        </p>
+                        <label class="ow-checkbox-row">
+                            <input type="checkbox" checked={createPurgeScheduleConfirmed} onchange={handleCreatePurgeScheduleConfirmCheckbox} />
+                            <span class="ow-checkbox-box"></span>
+                            <span class="ow-checkbox-text">{labels.confirmActivateAutoPurgeLabel}</span>
+                        </label>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.cancel} variant="neutral" onclick={closeCreatePurgeScheduleConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.activate}
+                            variant="brand"
+                            class="slds-m-left_x-small"
+                            onclick={confirmCreatePurgeSchedule}
+                            disabled={isConfirmCreatePurgeScheduleDisabled}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={showDisableAllAlertsConfirm}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeDisableAllAlertsConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.disableAllAlertsTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>{labels.disableAllAlertsText}</p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.cancel} variant="neutral" onclick={closeDisableAllAlertsConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.disableAllConfirmBtn}
+                            variant="destructive"
+                            class="slds-m-left_x-small"
+                            onclick={confirmDisableAllAlerts}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={showUnsavedAlertChangesConfirm}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeUnsavedAlertChangesConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.unsavedChangesTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>{labels.unsavedChangesText}</p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.stayOnTab} variant="neutral" onclick={closeUnsavedAlertChangesConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.leaveWithoutSaving}
+                            variant="destructive"
+                            class="slds-m-left_x-small"
+                            onclick={confirmLeaveAlertsTabDiscardingChanges}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={showRevokeConfirm}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeRevokeConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.revokeConfirmTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p>{revokeConfirmMessage}</p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.cancel} variant="neutral" onclick={closeRevokeConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.revokeConfirmButton}
+                            variant="destructive"
+                            class="slds-m-left_x-small"
+                            onclick={confirmRevokePS}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={showDisableUserAlertsConfirm}>
+            <section role="dialog" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeDisableUserAlertsConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 class="slds-text-heading_medium">{labels.disableUserAlertsTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p class="slds-m-bottom_small">{disableUserAlertsMessage}</p>
+                        <label class="ow-checkbox-row">
+                            <input type="checkbox" checked={notifyUserOnDisable} onchange={handleNotifyUserCheckbox} />
+                            <span class="ow-checkbox-box"></span>
+                            <span class="ow-checkbox-text">{notifyUserCheckboxLabel}</span>
+                        </label>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.cancel} variant="neutral" onclick={closeDisableUserAlertsConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.adminDisableAlertsBtn}
+                            variant="destructive"
+                            class="slds-m-left_x-small"
+                            onclick={confirmDisableUserAlerts}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </lightning-card>
+    </div>
+
+        <template if:true={showDeleteAllDataConfirm}>
+            <section role="dialog" aria-modal="true" aria-labelledby="ow-delete-all-title" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeDeleteAllDataConfirm}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 id="ow-delete-all-title" class="slds-text-heading_medium">{labels.maintenancePurgeAllTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <lightning-icon icon-name="utility:warning" size="small" variant="warning" class="slds-m-right_small"></lightning-icon>
+                                <p><strong>{labels.irreversibleWarning}</strong></p>
+                            </div>
+                        </div>
+                        <p class="slds-m-bottom_small">{labels.maintenancePurgeAllConfirm}</p>
+                        <label class="ow-checkbox-row">
+                            <input type="checkbox" checked={deleteAllDataConfirmed} onchange={handleDeleteAllDataCheckbox} />
+                            <span class="ow-checkbox-box"></span>
+                            <span class="ow-checkbox-text">{labels.maintenancePurgeAllCheckbox}</span>
+                        </label>
+                        <label class="ow-checkbox-row">
+                            <input type="checkbox" checked={deleteAllDataIncludeLibrary} onchange={handleDeleteAllDataLibraryCheckbox} />
+                            <span class="ow-checkbox-box"></span>
+                            <span class="ow-checkbox-text">{labels.maintenancePurgeAllAlsoLibrary}</span>
+                        </label>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.cancel} variant="neutral" onclick={closeDeleteAllDataConfirm}></lightning-button>
+                        <lightning-button
+                            label={labels.deletePermanently}
+                            variant="destructive"
+                            class="slds-m-left_x-small"
+                            onclick={confirmDeleteAllData}
+                            disabled={isDeleteAllDataDisabled}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+
+        <template if:true={showAdminDirectory}>
+            <section role="dialog" aria-modal="true" aria-labelledby="ow-admin-dir-title" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button type="button" class="modal-close-btn" aria-label={labels.closeAlt} title={labels.closeAlt} onclick={closeAdminDirectory}>
+                            <svg viewBox="0 0 24 24" class="modal-close-icon" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                            </svg>
+                        </button>
+                        <h2 id="ow-admin-dir-title" class="slds-text-heading_medium">{labels.adminDirectoryTitle}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <template if:true={loadingAdminDirectory}>
+                            <lightning-spinner alternative-text={labels.loading} size="small"></lightning-spinner>
+                        </template>
+
+                        <template if:false={loadingAdminDirectory}>
+                            <template if:true={hasOrgWatchAdmins}>
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">{labels.adminDirectoryIntro}</p>
+                                <ul class="ow-admin-list">
+                                    <template for:each={adminDirectory.admins} for:item="admin">
+                                        <li key={admin.userId}>
+                                            <span class="ow-admin-name">{admin.name}</span>
+                                            <span class="ow-admin-email">{admin.email}</span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+
+                            <template if:false={hasOrgWatchAdmins}>
+                                <div class="slds-box slds-theme_warning">
+                                    <div class="slds-grid slds-grid_vertical-align-center">
+                                        <lightning-icon icon-name="utility:warning" size="small" variant="warning" class="slds-m-right_small"></lightning-icon>
+                                        <p>{labels.adminDirectoryEmpty}</p>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <p class="ow-admin-permset-note">
+                                {labels.adminDirectoryPermissionSetPrefix}<strong>{adminPermissionSetDisplay}</strong>
+                                <span class="ow-admin-permset-hint">{labels.adminDirectoryPermissionSetSuffix}</span>
+                            </p>
+                        </template>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label={labels.closeAlt} variant="neutral" onclick={closeAdminDirectory}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </template>
+
+</template>
